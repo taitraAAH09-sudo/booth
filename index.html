@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V45</title>
+<title>攤位圖規劃台 V46</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -143,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V45</small></h1>
+  <h1>攤位圖規劃台<small>V46</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -151,6 +151,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
     <button data-mode="select" class="on" title="左鍵拖曳＝移動畫面；Alt＋左鍵＝操作攤位">一般</button>
     <button data-mode="fill" title="框選一塊區域，自動排滿（F）">框選排滿</button>
     <button data-mode="aisle" title="直接拖曳主走道與隔牆黑線（A）">調走道</button>
+    <button data-mode="cz" title="框出一塊範圍指定給某展區，排攤位時這個展區只排在範圍內（Z 以外的快捷：C）">畫展區範圍</button>
     <button data-mode="wall" title="像筆一樣畫隔板：拖曳畫一段，或一點一點連續點（W）；Esc 結束">畫隔板</button>
   </div>
   <div class="mini"><input class="num" id="szW" type="number" step="0.5" min="0.5" value="3" aria-label="寬（m）">×<input class="num" id="szD" type="number" step="0.5" min="0.5" value="3" aria-label="深（m）"><button class="btn" id="addOne" title="在畫面中央放一個這個尺寸的攤位">＋攤位</button></div>
@@ -414,11 +415,12 @@ function hotFor(v){const W=FL.wall,cx=FL.cx,ys=FL.xs,dy=FL.doorY;return[...ys.ma
 function score(r){let s=1e9;for(const h of HOT)s=Math.min(s,rdist(r,h)*h.k);
   if(MAIN.slice(1).some(a=>touch(a,r)))s-=CV.mb;if(CV.cb&&touch(MAIN[0],r))s-=CV.cb;return s+Math.random()*CV.j}
 function mark(col,xi,yi,wc,dc){for(let j=yi;j<yi+dc;j++)for(let i=xi;i<xi+wc;i++)col.occ[j*col.C+i]=1}
-let PC=null,LC={id:'',t:0},LOCKS=[];
+let PC=null,LC={id:'',t:0},LOCKS=[],ALLOW=null;
+const CZ=f=>((S.cz||{})[f]||[]),czIn=(r,z)=>r.x>=z.x-E&&r.y>=z.y-E&&r.x+r.w<=z.x+z.w+E&&r.y+r.d<=z.y+z.d+E;
 function placeOne(zs,bw,bd){
   let best=null;const zgap=(a,b)=>Math.max(0,a.x0-b.x1,b.x0-a.x1)+Math.max(0,a.y0-b.y1,b.y0-a.y1),zp=z=>{if(!PC||!PC.home)return 0;if(!z.strip)return PC.home.has(z)?0:180;for(const h of PC.home)if(zgap(h,z)<8)return 0;return 140},cp=r=>PC&&PC.cent?1.2*Math.hypot(r.x+r.w/2-PC.cent.x,r.y+r.d/2-PC.cent.y):0;const big=bw*bd>=36-E,orients=Math.abs(bw-bd)<E?[[bw,bd]]:[[bw,bd],[bd,bw]],Dc=Math.round(S.gen.isl/CELL);
   const tryIsl=(z,col,isl,ys,xs,pen,extra)=>{for(const yi of ys)for(const xi of xs){if(!fits(z,col,isl,xi,yi,extra.wc,extra.dc,big))continue;
-    const r0={x:col.x+xi*CELL,y:z.y0+yi*CELL,w:extra.w,d:extra.d};if(PILL.length&&PILL.some(p=>ov(p,r0)&&(!big||!inside(p,r0))))continue;if(LOCKS.length&&LOCKS.some(l=>ov(l,r0)))continue;
+    const r0={x:col.x+xi*CELL,y:z.y0+yi*CELL,w:extra.w,d:extra.d};if(PILL.length&&PILL.some(p=>ov(p,r0)&&(!big||!inside(p,r0))))continue;if(LOCKS.length&&LOCKS.some(l=>ov(l,r0)))continue;if(ALLOW&&!ALLOW(r0))continue;
     const r=r0,s=score(r)+pen+zp(z)+cp(r)+(PILL.length&&pilNear(r)?6:0);if(!best||s<best.s)best={s,z,col,isl,xi,yi,...extra,r}}};
   for(const z of zs)for(const[w,d]of orients){
     if(d>z.y1-z.y0+E||(z.strip&&d>3+E))continue;
@@ -455,7 +457,7 @@ function gatherEmpty(out){const isE=b=>b.empty&&!b.name&&!b.locked&&!b.stage,isO
   const near=e=>{const c=C(e),cnt={};out.forEach(o=>{if(!isO(o))return;const q=C(o);if(Math.abs(q.x-c.x)<7&&Math.abs(q.y-c.y)<7)cnt[o.cat]=(cnt[o.cat]||0)+1});return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]};
   for(let pass=0;pass<6;pass++){let ch=0;const em=out.filter(isE).sort((a,b)=>dist(b)-dist(a));
     for(const e of em){const de=dist(e),nc=near(e);let best=null,bs=1e9;
-      for(const o of out){if(!isO(o)||Math.abs(o.w-e.w)>E||Math.abs(o.d-e.d)>E)continue;if(nc&&o.cat!==nc)continue;const d=dist(o);if(d>=de-3)continue;const sc=d;if(sc<bs){bs=sc;best=o}}
+      for(const o of out){if(!isO(o)||Math.abs(o.w-e.w)>E||Math.abs(o.d-e.d)>E)continue;if(nc&&o.cat!==nc)continue;{const zz=CZ(S.floor).filter(z=>z.cat===o.cat);if(zz.length&&!zz.some(z=>czIn(e,z)))continue}const d=dist(o);if(d>=de-3)continue;const sc=d;if(sc<bs){bs=sc;best=o}}
       if(best){[best.x,e.x]=[e.x,best.x];[best.y,e.y]=[e.y,best.y];ch++}}
     if(!ch)break}}
 function autoNumber(bs){FL.areas.forEach(a=>{const list=bs.filter(b=>areaOf(b)===a),xs=[...new Set(list.map(b=>rd(b.x)))].sort((p,q)=>p-q);
@@ -481,10 +483,11 @@ function generate(silent){S.started=true;
   const parts={'1F':[],'4F':[]};
   if(floors.length===1)parts[floors[0]]=reqs;
   else{const cap={},used={'1F':0,'4F':0};floors.forEach(f=>{const c=capFor(f);cap[f]=FLOORS[f].areas.filter(a=>S.areas[a]).reduce((t,a)=>t+c[a],0)||1});
-    const pf=q=>{const f=q.pin?(q.pin.length===2?q.pin:fOf(q.pin)):pinF(S.cats.find(c=>c.id===q.cat));return floors.includes(f)?f:''},free=[];
+    const czA={};['1F','4F'].forEach(f=>{if(!floors.includes(f))return;CZ(f).forEach(z=>{const o=czA[z.cat]||(czA[z.cat]={});o[f]=(o[f]||0)+z.w*z.d})});const czU={};
+    const pf=q=>{if(!q.pin&&czA[q.cat]){const o=czA[q.cat],u=czU[q.cat]||(czU[q.cat]={}),fl=Object.keys(o);const f=fl.sort((a,b)=>(u[a]||0)/o[a]-(u[b]||0)/o[b])[0];u[f]=(u[f]||0)+q.w*q.d*1.6;return f}const f=q.pin?(q.pin.length===2?q.pin:fOf(q.pin)):pinF(S.cats.find(c=>c.id===q.cat));return floors.includes(f)?f:''},free=[];
     for(const q of reqs){const f=pf(q);if(f){parts[f].push(q);used[f]+=q.w*q.d/9}else free.push(q)}
     floors.forEach(f=>{const o=f==='1F'?'4F':'1F';if(!floors.includes(o))return;const lim=cap[f]*0.9;if(used[f]<=lim)return;
-      const mv=parts[f].filter(q=>pf(q)===f&&!q.pin&&!pinHard(S.cats.find(c=>c.id===q.cat))).sort((a,b)=>a.w*a.d-b.w*b.d);while(used[f]>lim&&mv.length){const q=mv.shift();parts[f].splice(parts[f].indexOf(q),1);parts[o].push(q);used[f]-=q.w*q.d/9;used[o]+=q.w*q.d/9;q.moved=1}});
+      const mv=parts[f].filter(q=>!czA[q.cat]&&pf(q)===f&&!q.pin&&!pinHard(S.cats.find(c=>c.id===q.cat))).sort((a,b)=>a.w*a.d-b.w*b.d);while(used[f]>lim&&mv.length){const q=mv.shift();parts[f].splice(parts[f].indexOf(q),1);parts[o].push(q);used[f]-=q.w*q.d/9;used[o]+=q.w*q.d/9;q.moved=1}});
     for(const q of free){const u=q.w*q.d/9,f=(used['1F']+u)/cap['1F']<=(used['4F']+u)/cap['4F']?'1F':'4F';parts[f].push(q);used[f]+=u}
     parts['1F'].sort((a,b)=>b.w*b.d-a.w*a.d);parts['4F'].sort((a,b)=>b.w*b.d-a.w*a.d)}
   const fail=[],per={},pinMiss=[];let all=[];
@@ -504,8 +507,9 @@ function generate(silent){S.started=true;
     parts[f].sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||CO.indexOf(a.cat)-CO.indexOf(b.cat)||b.w*b.d-a.w*a.d);
     const aHome=a=>new Set(zs.filter(z=>z.y0<FL.areaY[a][1]-E&&z.y1>FL.areaY[a][0]+E));
     for(const q of parts[f]){PC={home:q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?aHome(q.pin):homes[q.cat],cent:cents[q.cat]&&cents[q.cat].n?{x:cents[q.cat].x/cents[q.cat].n,y:cents[q.cat].y/cents[q.cat].n}:null};
+      {const mine=CZ(f).filter(z=>z.cat===q.cat),others=CZ(f).filter(z=>z.cat!==q.cat);ALLOW=mine.length?(r=>mine.some(z=>czIn(r,z))):others.length?(r=>!others.some(z=>ov(z,r))):null}
       const qc=S.cats.find(c=>c.id===q.cat),hA=pinHard(qc)&&pinA(qc)&&FL.areas.includes(pinA(qc))?pinA(qc):'',inA=a=>zs.filter(z=>(z.y0<FL.areaY[a][1]-E&&z.y1>FL.areaY[a][0]+E)),onlyA=(a,fn)=>{const W=FL.wall,[y0,y1]=FL.areaY[a],sv=LOCKS;LOCKS=LOCKS.concat([{x:W.x0-50,y:W.y0-50,w:W.x1-W.x0+100,d:y0-W.y0+50},{x:W.x0-50,y:y1,w:W.x1-W.x0+100,d:W.y1-y1+50}]);try{return fn()}finally{LOCKS=sv}};
-      const pz=q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?PC.home:null,r=!zs.length?null:hA&&!pz?onlyA(hA,()=>placeOne(inA(hA),q.w,q.d)):((pz&&onlyA(q.pin,()=>placeOne(inA(q.pin),q.w,q.d)))||placeOne(zs,q.w,q.d));if(pz&&r){const cy=r.y+r.d/2;if(cy<FL.areaY[q.pin][0]||cy>FL.areaY[q.pin][1])pinMiss.push(`${q.name} 指定 ${q.pin} 區，但那區放不下 ${rd(q.w)}×${rd(q.d)}m，先排到旁邊`)}if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,pin:q.pin||undefined,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
+      const pz=q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?PC.home:null,r=!zs.length?null:hA&&!pz?onlyA(hA,()=>placeOne(inA(hA),q.w,q.d)):((pz&&onlyA(q.pin,()=>placeOne(inA(q.pin),q.w,q.d)))||placeOne(zs,q.w,q.d));if(pz&&r){const cy=r.y+r.d/2;if(cy<FL.areaY[q.pin][0]||cy>FL.areaY[q.pin][1])pinMiss.push(`${q.name} 指定 ${q.pin} 區，但那區放不下 ${rd(q.w)}×${rd(q.d)}m，先排到旁邊`)}if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}ALLOW=null;if(!r&&CZ(f).some(z=>z.cat===q.cat))pinMiss.push(`${(S.cats.find(c=>c.id===q.cat)||{}).name} 的範圍放不下 ${q.name||q.tag}（${rd(q.w)}×${rd(q.d)}m），請把範圍拉大`);if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,pin:q.pin||undefined,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
     PC=null;
     if(g.fill){const em=[];fillRest(zs,em);em.forEach(r=>out.push({id:uid(),no:'',name:'',cat:'n',tag:'',empty:true,...r}));gatherEmpty(out)}
     LOCKS=[];if(g.number)autoNumber(out);
@@ -550,6 +554,7 @@ function build(o){
     [u.y,u.y+u.d].forEach(y=>{if(y>W.y0+1&&y<W.y1-1&&!inCut(y))h+=`<line x1="${W.x0}" y1="${y}" x2="${W.x1}" y2="${y}" stroke="#111" stroke-width="0.6"/><line class="limhit" x1="${W.x0}" y1="${y}" x2="${W.x1}" y2="${y}" stroke="transparent" stroke-width="2"><title>Alt＋拖曳移動；雙擊可回原位或拿掉</title></line>`})});
   {const cut=wallCut();cut.forEach(r=>h+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.d}" fill="rgba(120,126,134,.28)" pointer-events="none"/>`);
     if(cut.length){const big=cut.reduce((a,b)=>b.w*b.d>a.w*a.d?b:a);if(big.w>8&&big.d>3)h+=txt(big.x+big.w/2,big.y+big.d/2+0.6,'隔板外（不排攤位）',Math.min(2.4,big.w/9),{a:'middle',fill:'#6b7280',b:1})}}
+  CZ(S.floor).forEach((z,i)=>{const c=S.cats.find(c=>c.id===z.cat)||{color:'#888',name:'?'};h+=`<g data-cz="${i}" style="pointer-events:${mode==='cz'?'all':'none'};cursor:pointer"><rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.d}" fill="${esc(c.color)}" fill-opacity="0.12" stroke="${esc(c.color)}" stroke-width="0.6" stroke-dasharray="1.2 0.7" style="filter:saturate(1.6) brightness(.8)"/>${txt(z.x+0.6,z.y+2,`${c.name} 範圍`,1.6,{fill:'#333',b:1})}</g>`});
   h+=SITE_TOP;
   if(mode==='aisle'&&!o.print){MAIN.forEach(a=>h+=`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.d}" fill="rgba(11,92,173,.10)" stroke="#0b5cad" stroke-width="0.3" stroke-dasharray="1 0.6" pointer-events="none"/>`);MAIN.slice(1).forEach(a=>h+=txt(FL.colX[1]/2,a.y+a.d/2+0.6,'↕ 拖曳上下移動',1.6,{a:'middle',fill:'#0b5cad',b:1}));h+=txt(FL.cx,FL.bands[1][0]+12,'↔ 拖曳',1.6,{a:'middle',fill:'#0b5cad',b:1,rot:90});const m=LIM();['t','b'].forEach(k=>{if(m[k]!=null)h+=txt(FL.colR[1]-12,m[k]+(k==='t'?-1:2.2),'↕ 拖曳隔牆',1.4,{a:'middle',fill:'#111',b:1})})}
   h+=txt((W.x0+W.x1)/2,W.y0-5,S.titles[S.floor]||FL.title,3.2,{a:'middle',fill:'#111',b:1});
@@ -565,6 +570,11 @@ const WD={a:null,cur:null};
 function snapW(p){const W=FL.wall,g=v=>rd(Math.round(v/1.5)*1.5);let x=g(p.x),y=g(p.y);
   [W.x0,W.x1].forEach(v=>{if(Math.abs(p.x-v)<1.5)x=v});[W.y0,W.y1].forEach(v=>{if(Math.abs(p.y-v)<1.5)y=v});
   B().filter(b=>b.wall).forEach(b=>{const h=b.w>=b.d,ends=h?[[b.x,b.y+b.d/2],[b.x+b.w,b.y+b.d/2]]:[[b.x+b.w/2,b.y],[b.x+b.w/2,b.y+b.d]];ends.forEach(([ex,ey])=>{if(Math.hypot(p.x-ex,p.y-ey)<1.2){x=ex;y=ey}})});return{x,y}}
+function czPick(r,idx){const cats=S.cats.filter(c=>c.id!=='n');modal(idx==null?'這個範圍給哪個展區？':'修改展區範圍',`<p class="hint">${r.w}×${r.d}m・約 ${Math.round(r.w*r.d/9)} 格（含走道）</p><div class="cats">${cats.map(c=>`<button class="btn" data-czc="${c.id}" style="justify-content:flex-start;gap:8px;width:100%;margin-bottom:6px"><i class="sw" style="background:${esc(c.color)}"></i>${esc(c.name)}</button>`).join('')}</div>
+  <p class="hint">排攤位時，這個展區只排在它的範圍裡（同一展區可以畫好幾塊、也可以 1F／4F 各一塊）；其他展區會避開這個範圍。</p>`);
+  $$('[data-czc]').forEach(b=>b.onclick=()=>{push();S.cz=S.cz||{'1F':[],'4F':[]};S.cz[S.floor]=S.cz[S.floor]||[];if(idx==null)S.cz[S.floor].push({...r,cat:b.dataset.czc});else S.cz[S.floor][idx].cat=b.dataset.czc;closeM();commit();toast('已設定範圍，按「產生建議排法」就會照範圍排')})}
+function czMenu(i){const z=CZ(S.floor)[i];if(!z)return;const c=S.cats.find(c=>c.id===z.cat)||{name:'?'};modal('展區範圍',`<p><b>${esc(c.name)}</b>・${z.w}×${z.d}m</p><div class="row"><button class="btn" id="cz_chg">改成別的展區</button><button class="btn ghost warn" id="cz_del">刪除這個範圍</button><button class="btn" id="cz_ok">不動</button></div>`);
+  $('#cz_ok').onclick=closeM;$('#cz_del').onclick=()=>{push();S.cz[S.floor].splice(i,1);closeM();commit()};$('#cz_chg').onclick=()=>czPick(z,i)}
 function wdAxis(a,b){return Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x:b.x,y:a.y}:{x:a.x,y:b.y}}
 function wdPrev(){let g=$('#wdPrev');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='wdPrev';g.setAttribute('pointer-events','none');svg.appendChild(g)}
   if(mode!=='wall'||!WD.cur){g.innerHTML='';return}const a=(drag&&drag.t==='wdraw')?drag.p0:WD.a,c=WD.cur;let h=`<circle cx="${c.x}" cy="${c.y}" r="0.5" fill="#d93025"/>`;
@@ -585,6 +595,7 @@ svg.addEventListener('contextmenu',e=>{if(mode==='wall'){e.preventDefault();WD.a
 svg.addEventListener('contextmenu',e=>e.preventDefault());
 svg.addEventListener('pointerdown',e=>{
   const p=world(e);svg.setPointerCapture(e.pointerId);$('.menu').open=false;
+  if(mode==='cz'&&!space&&!e.altKey&&e.button===0){const g0=e.target.closest('[data-cz]');if(g0){czMenu(+g0.dataset.cz);return}const q=snapW(p);drag={t:'czdraw',p0:q,cur:q};return}
   if(mode==='wall'&&!space&&!e.altKey){if(e.button===2){WD.a=null;wdPrev();return}if(e.button===0){const q=snapW(p);drag={t:'wdraw',p0:q,moved:false};WD.cur=q;wdPrev();return}}
   const g=e.target.closest('[data-id]');
   if(mode!=='aisle'&&e.button===0&&e.altKey&&!space&&!(g&&byId(g.dataset.id)&&byId(g.dataset.id).wall)){const m=LIM(),W=FL.wall,rg=ranges(),tol=Math.max(0.5,7/svg.getScreenCTM().a),inx=p.x>=W.x0-1&&p.x<=W.x1+1;
@@ -609,6 +620,7 @@ svg.addEventListener('pointerdown',e=>{
 });
 svg.addEventListener('pointermove',e=>{
   const p=world(e);$('#pos').textContent=`X ${p.x.toFixed(1)} m　Y ${p.y.toFixed(1)} m`;
+  if(drag&&drag.t==='czdraw'){drag.cur=snapW(p);let g=$('#czPrev');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','rect');g.id='czPrev';g.setAttribute('fill','rgba(11,92,173,.12)');g.setAttribute('stroke','#0b5cad');g.setAttribute('stroke-width','0.4');g.setAttribute('stroke-dasharray','1 0.6');g.setAttribute('pointer-events','none');svg.appendChild(g)}const a=drag.p0,c=drag.cur;g.setAttribute('x',Math.min(a.x,c.x));g.setAttribute('y',Math.min(a.y,c.y));g.setAttribute('width',Math.abs(c.x-a.x));g.setAttribute('height',Math.abs(c.y-a.y));return}
   if(mode==='wall'){WD.cur=snapW(p);if(drag&&drag.t==='wdraw'&&Math.hypot(WD.cur.x-drag.p0.x,WD.cur.y-drag.p0.y)>=1.5)drag.moved=true;wdPrev();if(drag&&drag.t==='wdraw')return}
   if(!drag)return;
   if(drag.t==='aisle'){const dx=p.x-drag.p0.x,dy=p.y-drag.p0.y;let k=drag.k;
@@ -632,6 +644,7 @@ svg.addEventListener('pointermove',e=>{
 });
 svg.addEventListener('pointerup',()=>{
   if(!drag)return;const d=drag;drag=null;
+  if(d.t==='czdraw'){const a=d.p0,c=d.cur,r={x:Math.min(a.x,c.x),y:Math.min(a.y,c.y),w:rd(Math.abs(c.x-a.x)),d:rd(Math.abs(c.y-a.y))};const g=$('#czPrev');if(g)g.remove();if(r.w<6||r.d<6)return toast('範圍太小（至少 6×6m）');czPick(r);return}
   if(d.t==='wdraw'){const q=WD.cur||d.p0;if(d.moved){wdMake(d.p0,q);WD.a=null}else if(WD.a){if(Math.hypot(q.x-WD.a.x,q.y-WD.a.y)<0.5)WD.a=null;else{const b=wdMake(WD.a,q);WD.a=b||WD.a}}else WD.a=q;wdPrev();return}
   if(d.t==='aisle'){if(d.moved){hist.push(d.before);fut=[];commit();toast(d.k&&d.k[0]==='l'?'隔牆已移動，按「產生建議排法」依新範圍重排':'走道已移動，按「產生建議排法」依新走道重排')}else{const h=d.k||d.hits[0];if(h==='lt'||h==='lb')limMenu(h[1])}return}svg.classList.remove('grabbing');
   if(d.t==='pan'){if(d.dist<4&&d.btn===0){const now=Date.now();if(d.click&&LC.id===d.click&&now-LC.t<450){LC={id:'',t:0};sel=new Set([d.click]);render();renderPane();const bb=byId(d.click);bb&&bb.wall?wallEdit(bb):editBooth(bb);return}if(!d.click){const hk=limNear(d.wp);if(hk&&LC.lim===hk&&now-LC.t<450){LC={id:'',t:0};limMenu(hk[1]);return}LC={id:'',t:now,lim:hk}}else LC={id:d.click,t:now};if(d.click){if(d.shift){sel.has(d.click)?sel.delete(d.click):sel.add(d.click)}else sel=new Set([d.click]);if(tab==='gen'){tab='prop';syncTabs()}}else if(!d.shift)sel.clear();render();renderPane()}return}
@@ -1009,7 +1022,7 @@ function renderPane(){
   if(tab==='cost')return costPane(P);
   if(tab==='prop'){
     const bs=[...sel].map(byId).filter(Boolean);
-    if(!bs.length){P.innerHTML=`<div class="note"><b>按住 Alt 可移動廠商位置</b></div><p class="hint">單擊看屬性・雙擊編輯・Z 轉向・L 鎖定・Del 刪除<br>Alt＋拖空白處框選，Alt＋Shift 加選<br>Alt＋拖黑色隔牆可移動，雙擊黑線可回原位或拿掉<br>「畫隔板」模式：拖曳畫一段，或連續點點畫折線，Esc 結束</p>`;return}
+    if(!bs.length){P.innerHTML=`<div class="note"><b>按住 Alt 可移動廠商位置</b></div><p class="hint">單擊看屬性・雙擊編輯・Z 轉向・L 鎖定・Del 刪除<br>Alt＋拖空白處框選，Alt＋Shift 加選<br>Alt＋拖黑色隔牆可移動，雙擊黑線可回原位或拿掉<br>「畫隔板」模式：拖曳畫一段，或連續點點畫折線，Esc 結束<br>「畫展區範圍」：拉框指定給某展區（例如外商），排攤位時那個展區只排在框裡；點框可改或刪</p>`;return}
     if(bs.length===1&&bs[0].wall){const b=bs[0],cf=lastConf.get(b.id);P.innerHTML=`<div class="note"><b>隔板</b>・長 ${Math.max(b.w,b.d)} m（${b.w>=b.d?'橫':'直'}）</div>${cf?`<div class="note bad">${cf.map(esc).join('<br>')}<br>重新產生時，生成器會避開隔板。</div>`:''}<p class="hint">按住 Alt 拖曳移動・Z 轉直／橫・Del 刪除・雙擊改長度</p><div class="row"><button class="btn" id="wp_e">改長度</button><button class="btn" id="wp_r">轉直／橫 (Z)</button><button class="btn ghost warn" id="wp_d">刪除</button></div>`;
       $('#wp_e').onclick=()=>wallEdit(b);$('#wp_r').onclick=rotate;$('#wp_d').onclick=del;return}
     if(bs.length===1){const b=bs[0],cf=lastConf.get(b.id),pc=pillarsIn(b);
@@ -1138,7 +1151,7 @@ function exportDialog(){
 $('#fileJson').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.plans)throw 0;push();const D=defaults();S=Object.assign(D,d,{gen:Object.assign(D.gen,d.gen||{})});setFloor(S.floor);sel.clear();closeM();commit();toast('已匯入')}catch(x){toast('檔案格式不正確（需為 V3 專案檔）')}});e.target.value=''};
 
 /* ===== toolbar & keys ===== */
-function setMode(m){mode=m;if(m!=='wall'){WD.a=null;wdPrev()}svg.classList.toggle('wallm',m==='wall');if(m!=='select'&&tab!=='prop'){tab='prop';syncTabs()}if(m==='wall')toast('畫隔板：按住拖曳畫一段，或一點一點連續點；Esc 或再點一次同一點結束');$('#aisleBar').hidden=m!=='aisle';$$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));svg.classList.toggle('fill',m==='fill');svg.classList.toggle('aisle',m==='aisle');if(m==='aisle')toast('拖曳灰色主走道或黑色隔牆線來移動；完成後按「產生建議排法」');render();renderPane();if(m==='fill')toast('拉出一塊範圍，放開就用工具列的尺寸排滿')}
+function setMode(m){mode=m;if(m==='cz')toast('畫展區範圍：拉出一個框，放開後選要給哪個展區');if(m!=='wall'){WD.a=null;wdPrev()}svg.classList.toggle('wallm',m==='wall');if(m!=='select'&&tab!=='prop'){tab='prop';syncTabs()}if(m==='wall')toast('畫隔板：按住拖曳畫一段，或一點一點連續點；Esc 或再點一次同一點結束');$('#aisleBar').hidden=m!=='aisle';$$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));svg.classList.toggle('fill',m==='fill');svg.classList.toggle('aisle',m==='aisle');if(m==='aisle')toast('拖曳灰色主走道或黑色隔牆線來移動；完成後按「產生建議排法」');render();renderPane();if(m==='fill')toast('拉出一塊範圍，放開就用工具列的尺寸排滿')}
 $$('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 $$('[data-floor]').forEach(b=>b.onclick=()=>switchFloor(b.dataset.floor));
 $('#addOne').onclick=addOne;
@@ -1518,6 +1531,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='f')setMode(mode==='fill'?'select':'fill');
   else if(k==='a')setMode(mode==='aisle'?'select':'aisle');
   else if(k==='w')setMode(mode==='wall'?'select':'wall');
+  else if(k==='c'&&!c)setMode(mode==='cz'?'select':'cz');
   else if(k==='escape'){sel.clear();render();renderPane()}
   else if(k.startsWith('arrow')){e.preventDefault();const s=e.shiftKey?3:S.snap;nudge(k==='arrowleft'?-s:k==='arrowright'?s:0,k==='arrowup'?-s:k==='arrowdown'?s:0)}
 });
