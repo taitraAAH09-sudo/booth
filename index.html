@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V44</title>
+<title>攤位圖規劃台 V45</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -143,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V44</small></h1>
+  <h1>攤位圖規劃台<small>V45</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -322,7 +322,7 @@ function setFloor(f,keepView){
   MAIN=[{x:FL.colX[1],y:FL.nA[0],w:rd(FL.colR[0]-FL.colX[1]),d:rd(FL.sA[1]-FL.nA[0]),v:1},...FL.aisleY.map(([a,b])=>({x:W.x0,y:a,w:rd(W.x1-W.x0),d:rd(b-a)}))];
   PERI=[{x:W.x0,y:W.y0,w:-W.x0,d:W.y1-W.y0},{x:FL.colR[1],y:W.y0,w:rd(W.x1-FL.colR[1]),d:W.y1-W.y0},{x:0,y:FL.nA[0],w:FL.colR[1],d:rd(FL.nA[1]-FL.nA[0])},{x:0,y:FL.sA[0],w:FL.colR[1],d:rd(FL.sA[1]-FL.sA[0])}];
   const ys=FL.aisleY.map(([a,b])=>(a+b)/2),k=[1.02,1,1.04];
-  HOT=[...ys.map((y,i)=>({x:cx,y,k:k[i]})),...FL.doorY.map((y,i)=>({x:W.x0,y,k:k[i]+0.2})),...FL.doorY.map((y,i)=>({x:W.x1,y,k:k[i]+0.62}))];
+  HOT=[...ys.map((y,i)=>({x:cx,y,k:k[i]})),...FL.doorY.map((y,i)=>({x:W.x0,y,k:k[i]+0.2}))];
   FL.xs=ys;buildSite();
   $$('[data-floor]').forEach(b=>b.classList.toggle('on',b.dataset.floor===f));
   if(!keepView)view={...FL.view};
@@ -410,7 +410,7 @@ const VARS=[
  {id:'F',t:'大島',d:'黃金十字，島寬 9m，一島塞更多家，適合中小攤多的展',x:[1.02,1,1.04],w:[1.25,1.1,1.3],e:[1.7,1.7,1.7],cb:0,mb:3,j:0.4,islW:9},
  {id:'G',t:'四角平均',d:'每個十字的四個轉角輪流分給大攤，三個路口一樣熱',x:[1,1,1],w:[1.15,1.1,1.15],e:[1.6,1.6,1.6],cb:0,mb:3,j:2.5}];
 let CV=VARS[0];
-function hotFor(v){const W=FL.wall,cx=FL.cx,ys=FL.xs,dy=FL.doorY;return[...ys.map((y,i)=>({x:cx,y,k:v.x[i]})),...dy.map((y,i)=>({x:W.x0,y,k:v.w[i]})),...dy.map((y,i)=>({x:W.x1,y,k:v.e[i]}))]}
+function hotFor(v){const W=FL.wall,cx=FL.cx,ys=FL.xs,dy=FL.doorY;return[...ys.map((y,i)=>({x:cx,y,k:v.x[i]})),...dy.map((y,i)=>({x:W.x0,y,k:v.w[i]}))]} /* 右側是貨品出入口，不算黃金地段 */
 function score(r){let s=1e9;for(const h of HOT)s=Math.min(s,rdist(r,h)*h.k);
   if(MAIN.slice(1).some(a=>touch(a,r)))s-=CV.mb;if(CV.cb&&touch(MAIN[0],r))s-=CV.cb;return s+Math.random()*CV.j}
 function mark(col,xi,yi,wc,dc){for(let j=yi;j<yi+dc;j++)for(let i=xi;i<xi+wc;i++)col.occ[j*col.C+i]=1}
