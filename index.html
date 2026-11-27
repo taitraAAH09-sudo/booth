@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V46</title>
+<title>攤位圖規劃台 V47</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -59,7 +59,7 @@ body.blank #wizBtn{animation:wzPulse 1.4s ease-in-out infinite;position:relative
 #plan{position:absolute;inset:0;width:100%;height:100%;touch-action:none;user-select:none}
 #plan{cursor:grab}#plan.grabbing{cursor:grabbing}#plan.edit{cursor:crosshair}#plan.fill{cursor:crosshair}#plan.aisle{cursor:move}
 .bth{cursor:pointer}#plan.edit .bth{cursor:move}
-#toolBox{padding:10px 14px 4px;border-bottom:1px solid var(--line)}#toolBox .tb{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center;margin-bottom:8px}#toolBox .h{margin:0;font-size:12px;color:var(--mute)}#toolBox .seg{flex-wrap:wrap}
+#toolBox{padding:10px 14px 4px;border-bottom:1px solid var(--line)}#toolBox .tb{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center;margin-bottom:8px}#toolBox .h{margin:0;font-size:12px;color:var(--mute)}#toolBox .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border:0;overflow:visible;width:100%}#toolBox .seg button{border:1px solid #cfd5dd!important;border-radius:8px;background:#fff;min-height:38px;padding:6px 4px;font-size:13px}#toolBox .seg button:hover{background:#f0f4fa}#toolBox .seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)!important;font-weight:700}#toolBox [aria-label=縮放]{grid-template-columns:44px 1fr 44px;max-width:220px}
 svg.wallm{cursor:crosshair}
 aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
 .tabs{display:flex;gap:4px;padding:8px 8px;border-bottom:1px solid var(--line);background:#f6f7f9}
@@ -143,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V46</small></h1>
+  <h1>攤位圖規劃台<small>V47</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -152,6 +152,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
     <button data-mode="fill" title="框選一塊區域，自動排滿（F）">框選排滿</button>
     <button data-mode="aisle" title="直接拖曳主走道與隔牆黑線（A）">調走道</button>
     <button data-mode="cz" title="框出一塊範圍指定給某展區，排攤位時這個展區只排在範圍內（Z 以外的快捷：C）">畫展區範圍</button>
+    <button data-mode="lane" title="像筆一樣畫一條走道（預設 3m 寬），重新產生時這裡不排攤位">畫走道</button>
     <button data-mode="wall" title="像筆一樣畫隔板：拖曳畫一段，或一點一點連續點（W）；Esc 結束">畫隔板</button>
   </div>
   <div class="mini"><input class="num" id="szW" type="number" step="0.5" min="0.5" value="3" aria-label="寬（m）">×<input class="num" id="szD" type="number" step="0.5" min="0.5" value="3" aria-label="深（m）"><button class="btn" id="addOne" title="在畫面中央放一個這個尺寸的攤位">＋攤位</button></div>
@@ -536,6 +537,7 @@ function build(o){
   const DS=!!S.dash;
   if(DS){let p='';const x1=FL.colR[1],y0=FL.nA[1],y1=FL.sA[0];for(let x=0;x<=x1+E;x+=3)p+=`M${rd(x)} ${y0}V${y1}`;for(let y=y0;y<=y1+E;y+=3)p+=`M0 ${rd(y)}H${x1}`;h+=`<path d="${p}" stroke="#c3c9d0" stroke-width="0.06" stroke-dasharray="0.45 0.3" fill="none" pointer-events="none"/>`}
   for(const b of B()){
+    if(b.lane){const s=!o.print&&sel.has(b.id),hz=b.w>=b.d;h+=`<g class="bth lane" data-id="${b.id}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.d}" fill="#dfe3e8" fill-opacity="0.9" stroke="${s?'#0b5cad':'#9aa3ad'}" stroke-width="${s?0.4:0.2}" stroke-dasharray="${s?'':'0.8 0.5'}"/>${Math.max(b.w,b.d)>8?txt(b.x+b.w/2,b.y+b.d/2+0.5,`走道 ${rd(Math.min(b.w,b.d))}m`,Math.min(1.4,Math.min(b.w,b.d)*0.45),{a:'middle',fill:'#6b7280'}):''}</g>`;continue}
     if(b.wall){const s=!o.print&&sel.has(b.id);h+=`<g class="bth wall" data-id="${b.id}"><rect x="${rd(b.x-0.6)}" y="${rd(b.y-0.6)}" width="${rd(b.w+1.2)}" height="${rd(b.d+1.2)}" fill="transparent"/><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.d}" fill="#111"/>${s?`<rect x="${rd(b.x-0.4)}" y="${rd(b.y-0.4)}" width="${rd(b.w+0.8)}" height="${rd(b.d+0.8)}" fill="none" stroke="#0b5cad" stroke-width="0.3"/>`:''}</g>`;continue}
     const c=b.stage?{color:'#4b5563'}:catOf(b.cat),bad=!o.print&&conf.has(b.id),s=!o.print&&sel.has(b.id),emp=!b.name&&b.empty;
     h+=DS?`<g class="bth" data-id="${b.id}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.d}" fill="${emp?'#fff':esc(c.color)}" stroke="#555b63" stroke-width="0.12"/>`+(()=>{let p='';for(let xx=b.x+3;xx<b.x+b.w-0.05;xx+=3)p+=`M${rd(xx)} ${b.y}V${rd(b.y+b.d)}`;for(let yy=b.y+3;yy<b.y+b.d-0.05;yy+=3)p+=`M${b.x} ${rd(yy)}H${rd(b.x+b.w)}`;return p?`<path d="${p}" stroke="rgba(0,0,0,.35)" stroke-width="0.07" stroke-dasharray="0.45 0.3" fill="none"/>`:''})():`<g class="bth" data-id="${b.id}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.d}" fill="${emp?'#fff':esc(c.color)}" stroke="${emp?'#c9ced4':'#5f656d'}" stroke-width="${emp?0.08:0.1}"/>`;
@@ -577,10 +579,10 @@ function czMenu(i){const z=CZ(S.floor)[i];if(!z)return;const c=S.cats.find(c=>c.
   $('#cz_ok').onclick=closeM;$('#cz_del').onclick=()=>{push();S.cz[S.floor].splice(i,1);closeM();commit()};$('#cz_chg').onclick=()=>czPick(z,i)}
 function wdAxis(a,b){return Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x:b.x,y:a.y}:{x:a.x,y:b.y}}
 function wdPrev(){let g=$('#wdPrev');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='wdPrev';g.setAttribute('pointer-events','none');svg.appendChild(g)}
-  if(mode!=='wall'||!WD.cur){g.innerHTML='';return}const a=(drag&&drag.t==='wdraw')?drag.p0:WD.a,c=WD.cur;let h=`<circle cx="${c.x}" cy="${c.y}" r="0.5" fill="#d93025"/>`;
+  if((mode!=='wall'&&mode!=='lane')||!WD.cur){g.innerHTML='';return}const a=(drag&&drag.t==='wdraw')?drag.p0:WD.a,c=WD.cur;let h=`<circle cx="${c.x}" cy="${c.y}" r="0.5" fill="#d93025"/>`;
   if(a){const b=wdAxis(a,c),L=rd(Math.hypot(b.x-a.x,b.y-a.y));h=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#d93025" stroke-width="0.4" stroke-dasharray="1 0.6"/><circle cx="${a.x}" cy="${a.y}" r="0.5" fill="#111"/>`+h+(L?`<text x="${(a.x+b.x)/2+0.6}" y="${(a.y+b.y)/2-0.6}" font-size="1.6" fill="#d93025" font-weight="700">${L} m</text>`:'')}g.innerHTML=h}
-function wdMake(a,c){const b=wdAxis(a,c),L=rd(Math.hypot(b.x-a.x,b.y-a.y));if(L<1.5)return null;push();const t=0.3,h=b.y===a.y;
-  const w={id:uid(),no:'',name:'隔板',cat:'n',tag:'',stage:true,wall:true,x:h?Math.min(a.x,b.x):rd(a.x-t/2),y:h?rd(a.y-t/2):Math.min(a.y,b.y),w:h?L:t,d:h?t:L};B().push(w);save();render();renderPane();return b}
+function wdMake(a,c){const b=wdAxis(a,c),L=rd(Math.hypot(b.x-a.x,b.y-a.y));if(L<1.5)return null;push();const ln=mode==='lane',t=ln?(+S.gen.laneW||3):0.3,h=b.y===a.y;
+  const w={id:uid(),no:'',name:ln?'走道':'隔板',cat:'n',tag:'',stage:true,...(ln?{lane:true}:{wall:true}),x:h?Math.min(a.x,b.x):rd(a.x-t/2),y:h?rd(a.y-t/2):Math.min(a.y,b.y),w:h?L:t,d:h?t:L};B().push(w);save();render();renderPane();return b}
 function render(){
   lastConf=check();
   const m=drag&&(drag.t==='box'||drag.t==='fill')?normRect(drag.p0,drag.p1):null;
@@ -591,12 +593,12 @@ const normRect=(a,b)=>({x:rd(Math.min(a.x,b.x)),y:rd(Math.min(a.y,b.y)),w:rd(Mat
 
 /* ===== pointer ===== */
 function world(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
-svg.addEventListener('contextmenu',e=>{if(mode==='wall'){e.preventDefault();WD.a=null;wdPrev()}});
+svg.addEventListener('contextmenu',e=>{if((mode==='wall'||mode==='lane')){e.preventDefault();WD.a=null;wdPrev()}});
 svg.addEventListener('contextmenu',e=>e.preventDefault());
 svg.addEventListener('pointerdown',e=>{
   const p=world(e);svg.setPointerCapture(e.pointerId);$('.menu').open=false;
   if(mode==='cz'&&!space&&!e.altKey&&e.button===0){const g0=e.target.closest('[data-cz]');if(g0){czMenu(+g0.dataset.cz);return}const q=snapW(p);drag={t:'czdraw',p0:q,cur:q};return}
-  if(mode==='wall'&&!space&&!e.altKey){if(e.button===2){WD.a=null;wdPrev();return}if(e.button===0){const q=snapW(p);drag={t:'wdraw',p0:q,moved:false};WD.cur=q;wdPrev();return}}
+  if((mode==='wall'||mode==='lane')&&!space&&!e.altKey){if(e.button===2){WD.a=null;wdPrev();return}if(e.button===0){const q=snapW(p);drag={t:'wdraw',p0:q,moved:false};WD.cur=q;wdPrev();return}}
   const g=e.target.closest('[data-id]');
   if(mode!=='aisle'&&e.button===0&&e.altKey&&!space&&!(g&&byId(g.dataset.id)&&byId(g.dataset.id).wall)){const m=LIM(),W=FL.wall,rg=ranges(),tol=Math.max(0.5,7/svg.getScreenCTM().a),inx=p.x>=W.x0-1&&p.x<=W.x1+1;
     const et=m.t!=null?m.t:(rg.length&&rg[0][0]>W.y0+1?rg[0][0]:null),eb=m.b!=null?m.b:(rg.length&&rg[rg.length-1][1]<W.y1-1?rg[rg.length-1][1]:null);
@@ -621,7 +623,7 @@ svg.addEventListener('pointerdown',e=>{
 svg.addEventListener('pointermove',e=>{
   const p=world(e);$('#pos').textContent=`X ${p.x.toFixed(1)} m　Y ${p.y.toFixed(1)} m`;
   if(drag&&drag.t==='czdraw'){drag.cur=snapW(p);let g=$('#czPrev');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','rect');g.id='czPrev';g.setAttribute('fill','rgba(11,92,173,.12)');g.setAttribute('stroke','#0b5cad');g.setAttribute('stroke-width','0.4');g.setAttribute('stroke-dasharray','1 0.6');g.setAttribute('pointer-events','none');svg.appendChild(g)}const a=drag.p0,c=drag.cur;g.setAttribute('x',Math.min(a.x,c.x));g.setAttribute('y',Math.min(a.y,c.y));g.setAttribute('width',Math.abs(c.x-a.x));g.setAttribute('height',Math.abs(c.y-a.y));return}
-  if(mode==='wall'){WD.cur=snapW(p);if(drag&&drag.t==='wdraw'&&Math.hypot(WD.cur.x-drag.p0.x,WD.cur.y-drag.p0.y)>=1.5)drag.moved=true;wdPrev();if(drag&&drag.t==='wdraw')return}
+  if((mode==='wall'||mode==='lane')){WD.cur=snapW(p);if(drag&&drag.t==='wdraw'&&Math.hypot(WD.cur.x-drag.p0.x,WD.cur.y-drag.p0.y)>=1.5)drag.moved=true;wdPrev();if(drag&&drag.t==='wdraw')return}
   if(!drag)return;
   if(drag.t==='aisle'){const dx=p.x-drag.p0.x,dy=p.y-drag.p0.y;let k=drag.k;
     if(!k){if(Math.hypot(dx,dy)<0.8)return;k=drag.hits.find(h=>h[0]==='l')||(drag.hits.length>1?(Math.abs(dx)>Math.abs(dy)?'v':drag.hits.find(h=>h[0]==='h')):drag.hits[0]);drag.k=k}
@@ -647,7 +649,7 @@ svg.addEventListener('pointerup',()=>{
   if(d.t==='czdraw'){const a=d.p0,c=d.cur,r={x:Math.min(a.x,c.x),y:Math.min(a.y,c.y),w:rd(Math.abs(c.x-a.x)),d:rd(Math.abs(c.y-a.y))};const g=$('#czPrev');if(g)g.remove();if(r.w<6||r.d<6)return toast('範圍太小（至少 6×6m）');czPick(r);return}
   if(d.t==='wdraw'){const q=WD.cur||d.p0;if(d.moved){wdMake(d.p0,q);WD.a=null}else if(WD.a){if(Math.hypot(q.x-WD.a.x,q.y-WD.a.y)<0.5)WD.a=null;else{const b=wdMake(WD.a,q);WD.a=b||WD.a}}else WD.a=q;wdPrev();return}
   if(d.t==='aisle'){if(d.moved){hist.push(d.before);fut=[];commit();toast(d.k&&d.k[0]==='l'?'隔牆已移動，按「產生建議排法」依新範圍重排':'走道已移動，按「產生建議排法」依新走道重排')}else{const h=d.k||d.hits[0];if(h==='lt'||h==='lb')limMenu(h[1])}return}svg.classList.remove('grabbing');
-  if(d.t==='pan'){if(d.dist<4&&d.btn===0){const now=Date.now();if(d.click&&LC.id===d.click&&now-LC.t<450){LC={id:'',t:0};sel=new Set([d.click]);render();renderPane();const bb=byId(d.click);bb&&bb.wall?wallEdit(bb):editBooth(bb);return}if(!d.click){const hk=limNear(d.wp);if(hk&&LC.lim===hk&&now-LC.t<450){LC={id:'',t:0};limMenu(hk[1]);return}LC={id:'',t:now,lim:hk}}else LC={id:d.click,t:now};if(d.click){if(d.shift){sel.has(d.click)?sel.delete(d.click):sel.add(d.click)}else sel=new Set([d.click]);if(tab==='gen'){tab='prop';syncTabs()}}else if(!d.shift)sel.clear();render();renderPane()}return}
+  if(d.t==='pan'){if(d.dist<4&&d.btn===0){const now=Date.now();if(d.click&&LC.id===d.click&&now-LC.t<450){LC={id:'',t:0};sel=new Set([d.click]);render();renderPane();const bb=byId(d.click);bb&&(bb.wall||bb.lane)?wallEdit(bb):editBooth(bb);return}if(!d.click){const hk=limNear(d.wp);if(hk&&LC.lim===hk&&now-LC.t<450){LC={id:'',t:0};limMenu(hk[1]);return}LC={id:'',t:now,lim:hk}}else LC={id:d.click,t:now};if(d.click){if(d.shift){sel.has(d.click)?sel.delete(d.click):sel.add(d.click)}else sel=new Set([d.click]);if(tab==='gen'){tab='prop';syncTabs()}}else if(!d.shift)sel.clear();render();renderPane()}return}
   if(d.t==='move'&&d.moved){hist.push(d.before);fut=[]}
   if(d.t==='box'){const r=normRect(d.p0,d.p1);if(r.w>0.3||r.d>0.3)B().forEach(b=>{if(ov(r,b))sel.add(b.id)})}
   if(d.t==='fill'){const r=normRect(d.p0,d.p1),w=+$('#szW').value,dd=+$('#szD').value;
@@ -655,7 +657,7 @@ svg.addEventListener('pointerup',()=>{
     else toast(`框選範圍要大於 ${w}×${dd}`)}
   commit();
 });
-svg.addEventListener('dblclick',e=>{const el=document.elementFromPoint(e.clientX,e.clientY),g=el&&el.closest('[data-id]');if(g){sel=new Set([g.dataset.id]);render();renderPane();const bb=byId(g.dataset.id);bb&&bb.wall?wallEdit(bb):editBooth(bb)}});
+svg.addEventListener('dblclick',e=>{const el=document.elementFromPoint(e.clientX,e.clientY),g=el&&el.closest('[data-id]');if(g){sel=new Set([g.dataset.id]);render();renderPane();const bb=byId(g.dataset.id);bb&&(bb.wall||bb.lane)?wallEdit(bb):editBooth(bb)}});
 /* 雙擊編輯：公司、編號、類別、形狀（同攤數換排法）、字的方向與大小 */
 function shapesFor(u){const o=[];for(let w=0.5;w<=u+E;w+=0.5){const d=u/w;if(d<0.5-E||Math.abs(d*2-Math.round(d*2))>1e-6)continue;if((w%1&&d%1)||w>16||d>16)continue;o.push([w,rd(d)])}
   return o.filter(([w,d])=>Number.isInteger(w)&&Number.isInteger(d)||u<1||!o.some(([a,b])=>Number.isInteger(a)&&Number.isInteger(b)))}
@@ -1022,7 +1024,8 @@ function renderPane(){
   if(tab==='cost')return costPane(P);
   if(tab==='prop'){
     const bs=[...sel].map(byId).filter(Boolean);
-    if(!bs.length){P.innerHTML=`<div class="note"><b>按住 Alt 可移動廠商位置</b></div><p class="hint">單擊看屬性・雙擊編輯・Z 轉向・L 鎖定・Del 刪除<br>Alt＋拖空白處框選，Alt＋Shift 加選<br>Alt＋拖黑色隔牆可移動，雙擊黑線可回原位或拿掉<br>「畫隔板」模式：拖曳畫一段，或連續點點畫折線，Esc 結束<br>「畫展區範圍」：拉框指定給某展區（例如外商），排攤位時那個展區只排在框裡；點框可改或刪</p>`;return}
+    if(!bs.length){P.innerHTML=`<div class="note"><b>按住 Alt 可移動廠商位置</b></div><p class="hint">單擊看屬性・雙擊編輯・Z 轉向・L 鎖定・Del 刪除<br>Alt＋拖空白處框選，Alt＋Shift 加選<br>Alt＋拖黑色隔牆可移動，雙擊黑線可回原位或拿掉<br>「畫隔板」「畫走道」：拖曳畫一段，或連續點點畫折線，Esc 結束；走道上重新產生時不排攤位<br>「畫展區範圍」：拉框指定給某展區（例如外商），排攤位時那個展區只排在框裡；點框可改或刪</p>`;return}
+    if(bs.length===1&&bs[0].lane){const b=bs[0];P.innerHTML=`<div class="note"><b>走道</b>・長 ${Math.max(b.w,b.d)} m・寬 ${Math.min(b.w,b.d)} m</div><p class="hint">重新產生時這條走道上不會排攤位。Alt＋拖曳移動・Z 轉直／橫・Del 刪除・雙擊改長寬</p><div class="row"><button class="btn" id="wp_e">改長寬</button><button class="btn ghost warn" id="wp_d">刪除</button></div>`;$('#wp_e').onclick=()=>wallEdit(b);$('#wp_d').onclick=del;return}
     if(bs.length===1&&bs[0].wall){const b=bs[0],cf=lastConf.get(b.id);P.innerHTML=`<div class="note"><b>隔板</b>・長 ${Math.max(b.w,b.d)} m（${b.w>=b.d?'橫':'直'}）</div>${cf?`<div class="note bad">${cf.map(esc).join('<br>')}<br>重新產生時，生成器會避開隔板。</div>`:''}<p class="hint">按住 Alt 拖曳移動・Z 轉直／橫・Del 刪除・雙擊改長度</p><div class="row"><button class="btn" id="wp_e">改長度</button><button class="btn" id="wp_r">轉直／橫 (Z)</button><button class="btn ghost warn" id="wp_d">刪除</button></div>`;
       $('#wp_e').onclick=()=>wallEdit(b);$('#wp_r').onclick=rotate;$('#wp_d').onclick=del;return}
     if(bs.length===1){const b=bs[0],cf=lastConf.get(b.id),pc=pillarsIn(b);
@@ -1151,7 +1154,7 @@ function exportDialog(){
 $('#fileJson').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.plans)throw 0;push();const D=defaults();S=Object.assign(D,d,{gen:Object.assign(D.gen,d.gen||{})});setFloor(S.floor);sel.clear();closeM();commit();toast('已匯入')}catch(x){toast('檔案格式不正確（需為 V3 專案檔）')}});e.target.value=''};
 
 /* ===== toolbar & keys ===== */
-function setMode(m){mode=m;if(m==='cz')toast('畫展區範圍：拉出一個框，放開後選要給哪個展區');if(m!=='wall'){WD.a=null;wdPrev()}svg.classList.toggle('wallm',m==='wall');if(m!=='select'&&tab!=='prop'){tab='prop';syncTabs()}if(m==='wall')toast('畫隔板：按住拖曳畫一段，或一點一點連續點；Esc 或再點一次同一點結束');$('#aisleBar').hidden=m!=='aisle';$$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));svg.classList.toggle('fill',m==='fill');svg.classList.toggle('aisle',m==='aisle');if(m==='aisle')toast('拖曳灰色主走道或黑色隔牆線來移動；完成後按「產生建議排法」');render();renderPane();if(m==='fill')toast('拉出一塊範圍，放開就用工具列的尺寸排滿')}
+function setMode(m){mode=m;if(m==='cz')toast('畫展區範圍：拉出一個框，放開後選要給哪個展區');if(m!=='wall'&&m!=='lane'){WD.a=null;wdPrev()}svg.classList.toggle('wallm',m==='wall'||m==='lane');if(m==='lane')toast('畫走道：拖曳畫一段，或連續點點；之後重新產生，這條走道上不會再排攤位');if(m!=='select'&&tab!=='prop'){tab='prop';syncTabs()}if(m==='wall')toast('畫隔板：按住拖曳畫一段，或一點一點連續點；Esc 或再點一次同一點結束');$('#aisleBar').hidden=m!=='aisle';$$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));svg.classList.toggle('fill',m==='fill');svg.classList.toggle('aisle',m==='aisle');if(m==='aisle')toast('拖曳灰色主走道或黑色隔牆線來移動；完成後按「產生建議排法」');render();renderPane();if(m==='fill')toast('拉出一塊範圍，放開就用工具列的尺寸排滿')}
 $$('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 $$('[data-floor]').forEach(b=>b.onclick=()=>switchFloor(b.dataset.floor));
 $('#addOne').onclick=addOne;
@@ -1170,10 +1173,10 @@ $('#stageBtn').onclick=()=>{modal('新增舞台區',`<div class="g4"><div><label
 
 $('#wallBtn').onclick=()=>{const w=18,d=0.3;let x=rd(Math.round((view.x+view.w/2-w/2)/1.5)*1.5),y=rd(Math.round((view.y+view.h/2)/1.5)*1.5);
   push();const b={id:uid(),no:'',name:'隔板',cat:'n',tag:'',stage:true,wall:true,x,y,w,d};B().push(b);sel=new Set([b.id]);commit();toast('已加一條 18m 隔板：Alt＋拖曳移動、Z 轉直／橫、Del 刪除、雙擊改長度')};
-function wallEdit(b){const L=Math.max(b.w,b.d);modal('隔板',`<div class="fld" style="grid-template-columns:72px minmax(0,1fr)"><label for="wl_l">長度（m）</label><input id="wl_l" type="number" step="1.5" min="1.5" value="${L}"></div>
+function wallEdit(b){const L=Math.max(b.w,b.d),T=Math.min(b.w,b.d);modal(b.lane?'走道':'隔板',`<div class="fld" style="grid-template-columns:72px minmax(0,1fr)"><label for="wl_l">長度（m）</label><input id="wl_l" type="number" step="1.5" min="1.5" value="${L}">${b.lane?`<label for="wl_t">寬度（m）</label><input id="wl_t" type="number" step="0.5" min="1.5" value="${T}">`:''}</div>
   <p class="hint">隔板會擋住生成器，重新產生時不會有攤位排到隔板上。</p><div class="row" style="justify-content:space-between"><span><button class="btn ghost warn" id="wl_del">刪除隔板</button><button class="btn ghost" id="wl_rot">轉直／橫</button></span><button class="btn pri" id="wl_ok">套用</button></div>`);
   $('#wl_del').onclick=()=>{closeM();sel=new Set([b.id]);del()};$('#wl_rot').onclick=()=>{closeM();sel=new Set([b.id]);rotate()};
-  $('#wl_ok').onclick=()=>{const l=+$('#wl_l').value;if(!(l>0))return toast('長度不正確');push();if(b.w>=b.d)b.w=rd(l);else b.d=rd(l);closeM();commit()}}
+  $('#wl_ok').onclick=()=>{const l=+$('#wl_l').value,t=$('#wl_t')?+$('#wl_t').value:0;if(!(l>0))return toast('長度不正確');push();const hz=b.w>=b.d;if(hz){b.w=rd(l);if(t>0){const cy=b.y+b.d/2;b.d=rd(t);b.y=rd(cy-t/2)}}else{b.d=rd(l);if(t>0){const cx=b.x+b.w/2;b.w=rd(t);b.x=rd(cx-t/2)}}if(t>0)S.gen.laneW=t;closeM();commit()}}
 function limNear(p){if(!p)return'';const m=LIM(),W=FL.wall,rg=ranges(),tol=Math.max(0.5,7/svg.getScreenCTM().a);if(p.x<W.x0-1||p.x>W.x1+1)return'';
   const et=m.t!=null?m.t:(rg.length&&rg[0][0]>W.y0+1?rg[0][0]:null),eb=m.b!=null?m.b:(rg.length&&rg[rg.length-1][1]<W.y1-1?rg[rg.length-1][1]:null);
   return et!=null&&Math.abs(p.y-et)<tol?'lt':eb!=null&&Math.abs(p.y-eb)<tol?'lb':''}
@@ -1515,7 +1518,7 @@ document.addEventListener('pointerdown',e=>{const m=$('.menu');if(m.open&&!m.con
 document.addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea,select'))return;
   if($('#modal').classList.contains('on')){if(e.key==='Escape')closeM();return}
-  if(mode==='wall'&&e.key==='Escape'){if(WD.a){WD.a=null;wdPrev()}else setMode('select');return}
+  if((mode==='wall'||mode==='lane')&&e.key==='Escape'){if(WD.a){WD.a=null;wdPrev()}else setMode('select');return}
   const k=e.key.toLowerCase(),c=e.ctrlKey||e.metaKey;
   if(e.key==='Alt'){e.preventDefault();svg.classList.add('edit');return}
   if(k===' '){space=true;e.preventDefault();return}
@@ -1530,7 +1533,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='l')toggleLock();
   else if(k==='f')setMode(mode==='fill'?'select':'fill');
   else if(k==='a')setMode(mode==='aisle'?'select':'aisle');
-  else if(k==='w')setMode(mode==='wall'?'select':'wall');
+  else if(k==='w')setMode((mode==='wall'||mode==='lane')?'select':'wall');
   else if(k==='c'&&!c)setMode(mode==='cz'?'select':'cz');
   else if(k==='escape'){sel.clear();render();renderPane()}
   else if(k.startsWith('arrow')){e.preventDefault();const s=e.shiftKey?3:S.snap;nudge(k==='arrowleft'?-s:k==='arrowright'?s:0,k==='arrowup'?-s:k==='arrowdown'?s:0)}
