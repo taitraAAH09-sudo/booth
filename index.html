@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V53</title>
+<title>攤位圖規劃台 V55</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -144,7 +144,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V53</small></h1>
+  <h1>攤位圖規劃台<small>V55</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -933,7 +933,9 @@ function costPane(P){
   const r=costOf(A);
   h+=`<div class="sec"><span class="h">${cfgName(A)}</span><table class="tier" style="font-size:13px"><colgroup><col style="width:44px"><col><col><col></colgroup>
     <tr><th>區</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">使用攤位</th><th style="text-align:right">總場地費（含稅）</th></tr>
-    ${r.rows.map(x=>`<tr><td class="u">${x.a}</td><td style="text-align:right">${$$n(x.sub)}</td><td style="text-align:right">${x.used}/${x.off}</td><td style="text-align:right"><b>${$$n(x.tot)}</b></td></tr>`).join('')}</table>
+    ${r.rows.map(x=>`<tr><td class="u">${x.a}</td><td style="text-align:right">${$$n(x.sub)}</td><td style="text-align:right">${x.used}/${x.off}${x.auto?'':'<br><small style="color:#c2410c">手動填</small>'}</td><td style="text-align:right"><b>${$$n(x.tot)}</b></td></tr>`).join('')}</table>
+    ${r.rows.filter(x=>x.used/x.off<0.15).map(x=>{const keep=A.filter(a=>a!==x.a),save=keep.length?(r.rent+r.tax)-((q=>q.rent+q.tax)(costOf(keep))):0;return `<div class="note bad" style="margin-top:8px"><b>${x.a} 區只算到 ${x.used}／${x.off} 攤</b>：${x.auto?`這區有開，但幾乎整區都在隔牆／隔板外面（灰色「隔牆外」那塊），所以尾款只收一點點；訂金 20% 還是照整區收（${$$n(x.dep)}）。`:'這個數字是在週曆「各區結算」手動填的。'}
+      <div class="row" style="margin:6px 0 0">${keep.length?`<button class="btn" data-drop="${x.a}">不租 ${x.a} 區（約省 ${$$n(save)}）</button>`:''}${x.auto?`<button class="btn" data-full="${x.a}">${x.a} 區隔牆回原位</button>`:`<button class="btn" data-unman="${x.a}">改回自動計算</button>`}</div></div>`}).join('')}
     <ul class="list" style="margin-top:8px">
     <li style="cursor:default;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
     <li style="cursor:default"><span>場地費（未稅，訂金 20%＋尾款 80%×使用比例）</span><span>${$$n(r.rent)}</span></li>
@@ -950,7 +952,7 @@ function costPane(P){
     <p class="hint">依「外貿協會台北南港展覽館 1 館展覽場地租用收費基準」2024.01 修訂版試算。假日展出加收當日場地費 5%；清潔費併保證金結算。雙層／超高依攤位勾選自動計入，冷氣、護理師、保全在週曆試算表填寫；實際以合約為準。</p></div>`;
   P.innerHTML=h;bindCost();
 }
-function bindCost(){$('#reEst')&&($('#reEst').onclick=()=>{const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),b0=costOf(A);push();const pa={...(S.cost.pa||{})};A.forEach(a=>{if(pa[a]){pa[a]={...pa[a]};delete pa[a].used}});S.cost.pa=pa;save();renderPane();const b1=costOf(A),d=(b1.rent+b1.tax)-(b0.rent+b0.tax);toast(`已依平面圖重新估價：總場地費 ${$$n(b1.rent+b1.tax)}${d?`（${d>0?'+':''}${Math.round(d).toLocaleString()}）`:'（沒變）'}`)});$$('[data-c]').forEach(i=>i.onchange=()=>{const k=i.dataset.c;S.cost[k]=i.type==='checkbox'?i.checked:i.type==='date'?i.value:Math.max(0,+i.value||0);if(k==='inD'||k==='showD'||k==='outD'||k==='start'){S.cost.otd={};S.cost.hol={}}save();renderPane()});
+function bindCost(){$$('[data-drop]').forEach(b=>b.onclick=()=>{const a=b.dataset.drop;push();S.areas[a]=false;S.lim[fOf(a)]={};setFloor(S.floor,true);commit();toast(`已不租 ${a} 區，記得按「產生建議排法」重排`)});$$('[data-full]').forEach(b=>b.onclick=()=>{const f=fOf(b.dataset.full);push();S.lim[f]={};setFloor(S.floor,true);commit();toast('隔牆已回原位，按「產生建議排法」重排')});$$('[data-unman]').forEach(b=>b.onclick=()=>{const a=b.dataset.unman;push();const pa={...(S.cost.pa||{})};pa[a]={...(pa[a]||{})};delete pa[a].used;S.cost.pa=pa;commit()});$('#reEst')&&($('#reEst').onclick=()=>{const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),b0=costOf(A);push();const pa={...(S.cost.pa||{})};A.forEach(a=>{if(pa[a]){pa[a]={...pa[a]};delete pa[a].used}});S.cost.pa=pa;save();renderPane();const b1=costOf(A),d=(b1.rent+b1.tax)-(b0.rent+b0.tax);toast(`已依平面圖重新估價：總場地費 ${$$n(b1.rent+b1.tax)}${d?`（${d>0?'+':''}${Math.round(d).toLocaleString()}）`:'（沒變）'}`)});$$('[data-c]').forEach(i=>i.onchange=()=>{const k=i.dataset.c;S.cost[k]=i.type==='checkbox'?i.checked:i.type==='date'?i.value:Math.max(0,+i.value||0);if(k==='inD'||k==='showD'||k==='outD'||k==='start'){S.cost.otd={};S.cost.hol={}}save();renderPane()});
   $('#calBtn')&&($('#calBtn').onclick=()=>costCal());$('#stBtn')&&($('#stBtn').onclick=()=>settleSheet())}
 /* 週曆試算表：星期一～日橫排；進場／撤場加在展期頭尾；逐日選加班時數 */
 function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7)+60);c.start=d.toISOString().slice(0,10)}
@@ -1072,7 +1074,7 @@ function renderPane(){
     const L=B(),tot=L.reduce((a,b)=>a+units(b),0),sold=L.filter(b=>!b.stage&&(!b.empty||b.name)),su=sold.reduce((a,b)=>a+units(b),0);
     let h=`<div class="stat"><div><b>${sold.length}</b><span>已配置（家）</span></div><div><b>${rd(su)}</b><span>已配置攤數</span></div><div><b>${rd(tot-su)}</b><span>空攤攤數</span></div><div><b style="color:${lastConf.size?'var(--bad)':'var(--ok)'}">${lastConf.size}</b><span>重疊的攤位</span></div></div>
       <span class="h">各類別</span>`;
-    S.cats.forEach(c=>{const bs=L.filter(b=>b.cat===c.id),u=bs.reduce((a,b)=>a+units(b),0);
+    S.cats.forEach(c=>{const bs=L.filter(b=>b.cat===c.id),u=bs.reduce((a,b)=>a+units(b),0);if(!bs.length)return;
       h+=`<div class="catrow"><div class="t"><span><i class="sw" style="background:${esc(c.color)}"></i>${esc(c.name)}</span><span>${bs.length} 個・${rd(u)} 攤</span></div><div class="bar"><i style="width:${tot?u/tot*100:0}%;background:${esc(c.color)};filter:saturate(1.5) brightness(.85)"></i></div></div>`});
     h+=`<span class="h" style="margin-top:16px">各區</span><ul class="list">`+FL.areas.map(a=>{const bs=L.filter(b=>areaOf(b)===a);return`<li style="cursor:default"><span>${a} 區${S.areas[a]?'':'（未使用）'}</span><span class="r">${bs.length} 個・${rd(bs.reduce((s,b)=>s+units(b),0))} 攤</span></li>`}).join('')+'</ul>';
     if(lastConf.size)h+=`<span class="h" style="margin-top:16px">重疊</span><ul class="list">`+[...lastConf].map(([id,r])=>{const b=byId(id);return`<li class="bad" data-go="${id}"><span>${esc(b.no||b.name||b.w+'×'+b.d)}</span><span class="r">${esc(r[0])}</span></li>`}).join('')+'</ul>';
@@ -1387,6 +1389,8 @@ function importXls(f){
       const AP={};$$('[data-ap]').forEach(sl=>AP[sl.dataset.ap]=sl.value);
       S.ex=list.map(x=>{const[cw,cd]=shapeU(x.u);return{name:x.name,full:x.full,cat:catFor(x.area),cw,cd,units:x.u,no:x.no.join('、')}});
       Object.entries(AP).forEach(([a,v])=>{if(a==='（無展區）')return;const id=catFor(a),c=S.cats.find(k=>k.id===id);if(c)c.pin=v||undefined});
+      {const keep=new Set(['n']);S.ex.forEach(x=>keep.add(x.cat));['1F','4F'].forEach(f=>{(S.plans[f]||[]).forEach(q=>{if(q.name||!q.empty)keep.add(q.cat)});((S.cz||{})[f]||[]).forEach(z=>keep.add(z.cat))});
+        const nc=S.cats.filter(c=>keep.has(c.id));if(nc.length>1){S.cats=nc;['1F','4F'].forEach(f=>(S.plans[f]||[]).forEach(q=>{if(!keep.has(q.cat))q.cat='n'}))}}
       S.gen.useEx=true;S.gen.total=list.length;S.gen.totalU=U;S.gen.tiers.forEach(t=>t.n=0);
       closeM();tab='gen';syncTabs();if(WZ.flow){WZ.U=U;WZ.N=list.length;WZ.A=null;wizAreas()}else autoFill(U,list.length)};
   }).catch(e=>toast(e.message==='load'?'Excel 讀取元件載入失敗，請確認網路':'檔案讀取失敗'))}
@@ -1404,6 +1408,7 @@ function wizard(){const c=S.cost;
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn pri" id="w_next">下一步：上傳廠商總表</button></div>`);
   $('#w_next').onclick=()=>{const ns=$('#w_s').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(ns)||+ns.slice(0,4)<2000||+ns.slice(0,4)>2099)return toast('年份請填四碼（2000–2099）');const sh=Math.max(1,+$('#w_sh').value||1),ii=Math.max(0,+$('#w_in').value||0),oo=Math.max(0,+$('#w_out').value||0);
     if(ns!==c.start||sh!==c.showD||ii!==c.inD||oo!==c.outD){c.otd={};c.hol={};c.outH={}}Object.assign(c,{start:ns,showD:sh,inD:ii,outD:oo,night:$('#w_night').checked});
+    S.cats=[{id:'g',name:'一般',color:'#9FD3FF'},{id:'n',name:'未售',color:'#FFFFFF'}];S.cz={'1F':[],'4F':[]};S.ex=[];
     S.started=true;WZ.U=0;WZ.N=0;save();syncBlank();renderPane();wizUpload()}}
 function wizUpload(){modal('開新展覽 2／4：廠商總表',`<p>請上傳報名系統匯出的廠商總表 Excel（需有「公司名稱」與「攤位數」欄位；有「展區」欄位會自動變成類別）。</p>
   <div class="row"><button class="btn pri big" id="wu_f">選擇 Excel 檔</button></div>
