@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V48</title>
+<title>攤位圖規劃台 V49</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -144,7 +144,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V48</small></h1>
+  <h1>攤位圖規劃台<small>V49</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -599,7 +599,7 @@ svg.addEventListener('contextmenu',e=>e.preventDefault());
 svg.addEventListener('pointerdown',e=>{
   const p=world(e);svg.setPointerCapture(e.pointerId);$('.menu').open=false;
   if(mode==='cz'&&!space&&!e.altKey&&e.button===0){const g0=e.target.closest('[data-cz]');if(g0){czMenu(+g0.dataset.cz);return}const q=snapW(p);drag={t:'czdraw',p0:q,cur:q};return}
-  if((mode==='wall'||mode==='lane')&&!space&&!e.altKey){if(e.button===2){WD.a=null;wdPrev();return}if(e.button===0){const q=snapW(p);drag={t:'wdraw',p0:q,moved:false};WD.cur=q;wdPrev();return}}
+  if((mode==='wall'||mode==='lane')&&!space&&!e.altKey){if(e.button===2){WD.a=null;wdPrev();return}if(e.button===0){const q=snapW(p),pg0=e.target.closest('[data-id]'),pb=pg0&&byId(pg0.dataset.id),pick=pb&&(pb.lane||pb.wall)?pb.id:'';drag={t:'wdraw',p0:q,moved:false,pick};WD.cur=q;wdPrev();return}}
   const g=e.target.closest('[data-id]');
   if(mode!=='aisle'&&e.button===0&&e.altKey&&!space&&!(g&&byId(g.dataset.id)&&byId(g.dataset.id).wall)){const m=LIM(),W=FL.wall,rg=ranges(),tol=Math.max(0.5,7/svg.getScreenCTM().a),inx=p.x>=W.x0-1&&p.x<=W.x1+1;
     const et=m.t!=null?m.t:(rg.length&&rg[0][0]>W.y0+1?rg[0][0]:null),eb=m.b!=null?m.b:(rg.length&&rg[rg.length-1][1]<W.y1-1?rg[rg.length-1][1]:null);
@@ -648,7 +648,7 @@ svg.addEventListener('pointermove',e=>{
 svg.addEventListener('pointerup',()=>{
   if(!drag)return;const d=drag;drag=null;
   if(d.t==='czdraw'){const a=d.p0,c=d.cur,r={x:Math.min(a.x,c.x),y:Math.min(a.y,c.y),w:rd(Math.abs(c.x-a.x)),d:rd(Math.abs(c.y-a.y))};const g=$('#czPrev');if(g)g.remove();if(r.w<6||r.d<6)return toast('範圍太小（至少 6×6m）');czPick(r);return}
-  if(d.t==='wdraw'){const q=WD.cur||d.p0;if(d.moved){wdMake(d.p0,q);WD.a=null}else if(WD.a){if(Math.hypot(q.x-WD.a.x,q.y-WD.a.y)<0.5)WD.a=null;else{const b=wdMake(WD.a,q);WD.a=b||WD.a}}else WD.a=q;wdPrev();return}
+  if(d.t==='wdraw'){const q=WD.cur||d.p0;if(!d.moved&&d.pick&&!WD.a){const now=Date.now(),bb=byId(d.pick);if(LC.id===d.pick&&now-LC.t<450){LC={id:'',t:0};wallEdit(bb);return}LC={id:d.pick,t:now};sel=new Set([d.pick]);render();renderPane();toast(`已選取${bb.lane?'走道':'隔板'}：按 Del 刪除，雙擊改長寬；要從這裡畫新的一段就直接拖曳`);return}if(d.moved){wdMake(d.p0,q);WD.a=null}else if(WD.a){if(Math.hypot(q.x-WD.a.x,q.y-WD.a.y)<0.5)WD.a=null;else{const b=wdMake(WD.a,q);WD.a=b||WD.a}}else WD.a=q;wdPrev();return}
   if(d.t==='aisle'){if(d.moved){hist.push(d.before);fut=[];commit();toast(d.k&&d.k[0]==='l'?'隔牆已移動，按「產生建議排法」依新範圍重排':'走道已移動，按「產生建議排法」依新走道重排')}else{const h=d.k||d.hits[0];if(h==='lt'||h==='lb')limMenu(h[1])}return}svg.classList.remove('grabbing');
   if(d.t==='pan'){if(d.dist<4&&d.btn===0){const now=Date.now();if(d.click&&LC.id===d.click&&now-LC.t<450){LC={id:'',t:0};sel=new Set([d.click]);render();renderPane();const bb=byId(d.click);bb&&(bb.wall||bb.lane)?wallEdit(bb):editBooth(bb);return}if(!d.click){const hk=limNear(d.wp);if(hk&&LC.lim===hk&&now-LC.t<450){LC={id:'',t:0};limMenu(hk[1]);return}LC={id:'',t:now,lim:hk}}else LC={id:d.click,t:now};if(d.click){if(d.shift){sel.has(d.click)?sel.delete(d.click):sel.add(d.click)}else sel=new Set([d.click]);if(tab==='gen'){tab='prop';syncTabs()}}else if(!d.shift)sel.clear();render();renderPane()}return}
   if(d.t==='move'&&d.moved){hist.push(d.before);fut=[]}
