@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V27</title>
+<title>攤位圖規劃台 V29</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -12,7 +12,7 @@
    PICTURE: 平面圖本身佔滿畫面，周邊設施只用淡灰，攤位與黃金路口才有顏色
    COLOUR/TYPE: 白底深墨、TAITRA 藍；類別色沿用原攤位圖；Noto Sans TC
    LAYOUT: 一條工具列、中間圖面、右側生成器／屬性／統計／名單 */
-:root{color-scheme:light dark;--bg:light-dark(#eef0f3,#121417);--panel:light-dark(#fff,#1d2024);--ink:light-dark(#1b1f24,#e8eaed);--mute:light-dark(#6b7280,#9aa1aa);--line:light-dark(#e3e6ea,#30343a);--acc:#0b5cad;--acc2:light-dark(#eaf2fb,#1a3350);--hot:#e8710a;--bad:#d93025;--ok:#188038}
+:root{color-scheme:light;--bg:light-dark(#eef0f3,#121417);--panel:light-dark(#fff,#1d2024);--ink:light-dark(#1b1f24,#e8eaed);--mute:light-dark(#6b7280,#9aa1aa);--line:light-dark(#e3e6ea,#30343a);--acc:#0b5cad;--acc2:light-dark(#eaf2fb,#1a3350);--hot:#e8710a;--bad:#d93025;--ok:#188038}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
 html,body{height:100%}
@@ -128,7 +128,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V27</small></h1>
+  <h1>攤位圖規劃台<small>V29</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -698,11 +698,18 @@ const $$n=v=>'NT$ '+Math.round(v).toLocaleString('en-US');
 const fOf=a=>'IJK'.includes(a)?'1F':'4F';
 function calDays(c){if(!c.start)return null;const d0=new Date(c.start+'T00:00:00');if(isNaN(d0))return null;const out=[],n=c.inD+c.showD+c.outD;
   for(let i=0;i<n;i++){const d=new Date(d0);d.setDate(d0.getDate()+i-c.inD);const type=i<c.inD?'in':i<c.inD+c.showD?'show':'out',wd=d.getDay(),hk=(c.hol||{})[i];
-    out.push({i,d,type,wd,holi:type==='show'&&(hk!==undefined?hk:(wd===0||wd===6)),ot:(c.otd||{})[i]||0,hr:type==='out'&&i===c.inD+c.showD?((c.outH||{})[i]||0):0})}return out}
-function costOf(A,c){c=c||S.cost;const cd=calDays(c);if(cd){const anyOt=cd.some(x=>x.ot);c={...c,holiD:cd.filter(x=>x.holi).length,otH:anyOt?cd.filter(x=>x.type==='show').reduce((t,x)=>t+x.ot,0):c.otH,ioH:anyOt?cd.filter(x=>x.type!=='show').reduce((t,x)=>t+x.ot,0):c.ioH}}const outF=cd?cd.filter(x=>x.type==='out').reduce((t,x)=>t+(x.hr?Math.max(4,x.hr)/9:1),0):c.outD,nH=c.night?(+c.nightH||0):0;
-  const rows=A.map(a=>{const f=FEE[a],io=f[0]*(c.inD+outF),sh=f[1]*c.showD,ho=f[1]*0.05*c.holiD,ot=f[3]*(c.otH||0),oi=f[2]*(c.ioH||0),ng=f[2]*nH*1.2;return{a,io,sh,ho,ot,oi,ng,sub:io+sh+ho+ot+oi+ng}});
-  const rent=rows.reduce((t,r)=>t+r.sub,0),tax=rent*0.05,days=c.inD+c.outD+c.showD+(c.night?1:0),clean=(CLEAN[Math.min(A.length,6)]||0)*days;
-  const otAll=rows.reduce((t,r)=>t+r.ot+r.oi+r.ng,0),ex=extrasOf(c,A);return{rows,outF,nH,ngAll:rows.reduce((t,r)=>t+r.ng,0),rent,tax,days,clean,otAll,ex,base:rent+tax+clean,total:rent+tax+clean+ex.total,net:rent+clean/1.05+ex.net}}
+    out.push({i,d,type,wd,holi:type==='show'&&(hk!==undefined?hk:(wd===0||wd===6)),ot:(c.otd||{})[i]||0,hr:type==='out'?((c.outH||{})[i]||0):0,io2:type==='show'?((c.iod||{})[i]!==undefined?+(c.iod||{})[i]:(c.night&&i===c.inD+c.showD-1?+c.nightH||0:0)):0})}return out}
+/* 依館方「展覽場地租用結算單」：每區 小計 → 訂金 20% ＋ 尾款 80%×(應使用攤位數／該區攤位數) → 5% VAT（各自四捨五入到元） */
+function usedAuto(a){const f=fOf(a),L=(S.plans[f]||[]).filter(b=>!b.stage&&!b.wall&&areaIn(f,b)===a);if(!L.length)return OFFICIAL[a];return Math.min(OFFICIAL[a],Math.round(L.reduce((t,b)=>t+units(b),0)))}
+function costOf(A,c){c=c||S.cost;const cd=calDays(c),ngM=c.outD>0?1:1.2,lastI=c.inD+c.showD-1,nH=cd?cd.reduce((t,x)=>t+x.io2,0):0;
+  const holiD=cd?cd.filter(x=>x.holi).length:c.holiD,anyOt=cd&&cd.some(x=>x.ot),otH=anyOt?cd.filter(x=>x.type==='show').reduce((t,x)=>t+x.ot,0):c.otH,ioH=anyOt?cd.filter(x=>x.type!=='show').reduce((t,x)=>t+x.ot,0):c.ioH;
+  const rows=A.map(a=>{const f=FEE[a],pa=(c.pa||{})[a]||{},inX=+pa.inX||0,hu=Math.round(f[0]/9);let io=f[0]*(c.inD+inX),hr=0,hrH=0,outFull=0;
+    if(cd)cd.filter(x=>x.type==='out').forEach(x=>{if(x.hr){const h=Math.max(4,+pa.hr||x.hr);hr+=hu*h;hrH+=h}else{io+=f[0];outFull++}});else{io+=f[0]*c.outD;outFull=c.outD}
+    const sh=f[1]*c.showD,ho=Math.round(f[1]*0.05)*holiD,ot=f[3]*(otH||0),oi=f[2]*(ioH||0),ng=cd?cd.reduce((t,x)=>t+(x.io2?Math.round(f[2]*(x.i===lastI?ngM:1))*x.io2:0),0):0,sub=io+hr+sh+ho+ot+oi+ng;
+    const off=OFFICIAL[a],used=pa.used!==undefined&&pa.used!==''?Math.min(off,+pa.used):usedAuto(a),auto=!(pa.used!==undefined&&pa.used!==''),dep=Math.round(sub*0.2),tail=Math.round(sub*0.8*used/off),vat=Math.round((dep+tail)*0.05);
+    return{a,f,inX,inDays:c.inD+inX,outFull,hu,hrH,io,hr,sh,ho,ot,oi,ng,sub,off,used,auto,dep,tail,vat,tot:dep+tail+vat}});
+  const rent=rows.reduce((t,r)=>t+r.dep+r.tail,0),tax=rows.reduce((t,r)=>t+r.vat,0),gross=rows.reduce((t,r)=>t+r.sub,0),days=c.inD+c.outD+c.showD+(c.night?1:0),clean=(CLEAN[Math.min(A.length,6)]||0)*days;
+  const otAll=rows.reduce((t,r)=>t+r.ot+r.oi+r.ng,0),ex=extrasOf(c,A);return{rows,nH,ngM,ngAll:rows.reduce((t,r)=>t+r.ng,0),gross,rent,tax,days,clean,otAll,ex,base:rent+tax+clean,total:rent+tax+clean+ex.total,net:rent+clean/1.05+ex.net}}
 /* 展區指定樓層／區：cat.pin = '' | '1F' | '4F' | 'I'…'N' */
 const PINS=['','1F','4F','I','J','K','L','M','N'],pinLabel=v=>!v?'自動':v.length>1?`${v} 整層`:`${fOf(v)} ${v} 區`;
 const pinOpts=v=>PINS.map(p=>`<option value="${p}"${(v||'')===p?' selected':''}>${pinLabel(p)}</option>`).join('');
@@ -808,15 +815,15 @@ function costPane(P){
   const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),need=+S.gen.totalU||B().filter(b=>!b.empty).reduce((t,b)=>t+units(b),0);
   const inp=(k,l,max)=>`<label class="h" style="margin:0">${l}<input class="num" style="display:block;width:100%;margin-top:4px" type="number" min="0" max="${max||60}" data-c="${k}" value="${c[k]}"></label>`;
   const cd=calDays(c);
-  let h=`<div class="sec"><span class="h">檔期</span><div class="row" style="margin:0 0 8px"><label class="h" style="margin:0">展出第一天<input type="date" data-c="start" value="${esc(c.start||'')}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label><button class="btn pri" id="calBtn" style="align-self:flex-end">開啟週曆試算表</button></div>${cd?`<p class="hint">已用週曆：假日 ${cd.filter(x=>x.holi).length} 天（自動抓六日），逐日加班在週曆裡填。</p>`:''}<span class="h">天數</span><div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">${inp('inD','進場天')}${inp('outD','撤場天')}${inp('showD','展出天')}${cd?'':inp('holiD','其中假日展出天')+inp('otH','展出延長（小時）',200)+inp('ioH','進出場加班（小時）',200)}</div>
-    <label class="chk"><input type="checkbox" data-c="night"${c.night?' checked':''}>連夜退場（清潔費加 1 日；晚間撤場時數在週曆填，超時費加 20%）</label></div>`;
+  let h=`<div class="sec"><span class="h">檔期</span><div class="row" style="margin:0 0 8px"><label class="h" style="margin:0">展出第一天<input type="date" min="2000-01-01" max="2099-12-31" data-c="start" value="${esc(c.start||'')}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label><button class="btn pri" id="calBtn" style="align-self:flex-end">開啟週曆試算表</button></div>${cd?`<p class="hint">已用週曆：假日 ${cd.filter(x=>x.holi).length} 天（自動抓六日），逐日加班在週曆裡填。</p>`:''}<span class="h">天數</span><div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">${inp('inD','進場天')}${inp('outD','撤場天')}${inp('showD','展出天')}${cd?'':inp('holiD','其中假日展出天')+inp('otH','展出延長（小時）',200)+inp('ioH','進出場加班（小時）',200)}</div>
+    <label class="chk"><input type="checkbox" data-c="night"${c.night?' checked':''}>連夜退場（清潔費加 1 日；展後出場時數在週曆最後一個展出日填）</label></div>`;
   if(!A.length){P.innerHTML=h+`<p class="hint">請先在生成器選區。</p>`;bindCost();return}
   const r=costOf(A);
   h+=`<div class="sec"><span class="h">${cfgName(A)}</span><table class="tier" style="font-size:13px"><colgroup><col style="width:44px"><col><col><col></colgroup>
-    <tr><th>區</th><th style="text-align:right">進出場</th><th style="text-align:right">展出＋加成</th><th style="text-align:right">小計</th></tr>
-    ${r.rows.map(x=>`<tr><td class="u">${x.a}</td><td style="text-align:right">${$$n(x.io+x.oi)}</td><td style="text-align:right">${$$n(x.sh+x.ho+x.ot)}</td><td style="text-align:right"><b>${$$n(x.sub)}</b></td></tr>`).join('')}</table>
+    <tr><th>區</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">使用攤位</th><th style="text-align:right">總場地費（含稅）</th></tr>
+    ${r.rows.map(x=>`<tr><td class="u">${x.a}</td><td style="text-align:right">${$$n(x.sub)}</td><td style="text-align:right">${x.used}/${x.off}</td><td style="text-align:right"><b>${$$n(x.tot)}</b></td></tr>`).join('')}</table>
     <ul class="list" style="margin-top:8px">
-    <li style="cursor:default"><span>場地費（未稅）</span><span>${$$n(r.rent)}</span></li>
+    <li style="cursor:default"><span>場地費（未稅，訂金 20%＋尾款 80%×使用比例）</span><span>${$$n(r.rent)}</span></li>
     <li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
     <li style="cursor:default"><span>清潔費（${A.length} 區 × ${r.days} 天，含稅）</span><span>${$$n(r.clean)}</span></li>
     ${r.ex.total?`<li style="cursor:default"><span>附加費（雙層 ${r.ex.dd.length}・超高 ${r.ex.hi.length}・冷氣／護理師／保全，含稅）</span><span>${$$n(r.ex.total)}</span></li>`:''}
@@ -831,7 +838,7 @@ function costPane(P){
   P.innerHTML=h;bindCost();
 }
 function bindCost(){$$('[data-c]').forEach(i=>i.onchange=()=>{const k=i.dataset.c;S.cost[k]=i.type==='checkbox'?i.checked:i.type==='date'?i.value:Math.max(0,+i.value||0);if(k==='inD'||k==='showD'||k==='outD'||k==='start'){S.cost.otd={};S.cost.hol={}}save();renderPane()});
-  $('#calBtn')&&($('#calBtn').onclick=costCal)}
+  $('#calBtn')&&($('#calBtn').onclick=()=>costCal())}
 /* 週曆試算表：星期一～日橫排；進場／撤場加在展期頭尾；逐日選加班時數 */
 function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7)+60);c.start=d.toISOString().slice(0,10)}
   const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]);if(!A.length)return toast('請先選區');
@@ -839,23 +846,34 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
   const first=new Date(cd[0].d);first.setDate(first.getDate()-((first.getDay()+6)%7));const last=cd[cd.length-1].d,weeks=[];
   for(let w=new Date(first);w<=last;w.setDate(w.getDate()+7)){const row=[];for(let k=0;k<7;k++){const d=new Date(w);d.setDate(w.getDate()+k);row.push(cd.find(x=>x.d.toDateString()===d.toDateString())||{d,none:1})}weeks.push(row)}
   const TL={in:['進場','#e8f0fb','#0b5cad'],show:['展出','#fff1e3','#b55400'],out:['撤場','#eef0f3','#555']};
-  const lastShow=cd.filter(x=>x.type==='show').slice(-1)[0],fee=x=>x.type==='show'?f1*(x.holi?1.05:1)+o1*x.ot+(c.night&&x===lastShow?o0*(+c.nightH||0)*1.2:0):f0*(x.hr?Math.max(4,x.hr)/9:1)+o0*x.ot;
-  const cell=x=>x.none?`<td style="background:var(--bg);color:var(--mute);font-size:12px;vertical-align:top">${x.d.getMonth()+1}/${x.d.getDate()}</td>`:
-    `<td style="background:${TL[x.type][1]};vertical-align:top;padding:6px"><div style="display:flex;justify-content:space-between;gap:4px"><b>${x.d.getMonth()+1}/${x.d.getDate()}</b><span style="color:${TL[x.type][2]};font-weight:700">${TL[x.type][0]}</span></div>
+  const lastShow=cd.filter(x=>x.type==='show').slice(-1)[0],fee=x=>x.type==='show'?f1+(x.holi?A.reduce((t,a)=>t+Math.round(FEE[a][1]*0.05),0):0)+o1*x.ot+(x.io2?A.reduce((t,a)=>t+Math.round(FEE[a][2]*(x===lastShow&&c.outD===0?1.2:1)),0)*x.io2:0):(x.hr?A.reduce((t,a)=>t+Math.round(FEE[a][0]/9)*Math.max(4,+((c.pa||{})[a]||{}).hr||x.hr),0):f0)+o0*x.ot;
+  const cell=x=>x.none?`<td style="background:#f3f4f6;color:#9aa0a8;font-size:12px;vertical-align:top">${x.d.getMonth()+1}/${x.d.getDate()}</td>`:
+    `<td style="background:${TL[x.type][1]};color:#1b1f24;vertical-align:top;padding:6px"><div style="display:flex;justify-content:space-between;gap:4px"><b>${x.d.getMonth()+1}/${x.d.getDate()}</b><span style="color:${TL[x.type][2]};font-weight:700">${TL[x.type][0]}</span></div>
      ${x.type==='show'?`<label style="font-size:12px;display:flex;gap:4px;align-items:center;margin:4px 0"><input type="checkbox" data-hol="${x.i}"${x.holi?' checked':''}>假日 +5%</label>`:'<div style="height:24px"></div>'}
-     <select data-ot="${x.i}" style="width:100%;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel)" aria-label="加班時數">${[0,1,1.5,2,2.5,3,4,5,6,8].map(v=>`<option value="${v}"${x.ot===v?' selected':''}>${v?`+${v}h`:x.type==='show'?'正常 8h':'正常 9h'}</option>`).join('')}</select>
-     ${x.type==='out'&&x.i===c.inD+c.showD?`<select data-hr="${x.i}" style="width:100%;padding:4px;margin-top:4px;border:1px solid var(--line);border-radius:6px;background:var(--panel)" aria-label="撤場計費">${[0,4,5,6,7,8].map(v=>`<option value="${v}"${x.hr===v?' selected':''}>${v?`按時 ${v}h`:'整天計'}</option>`).join('')}</select>`:''}
-     ${c.night&&x===lastShow?`<select data-nh style="width:100%;padding:4px;margin-top:4px;border:1px solid #c0392b;border-radius:6px;background:var(--panel)" aria-label="晚間撤場時數">${[0,1,2,3,4,5,6].map(v=>`<option value="${v}"${(+c.nightH||0)===v?' selected':''}>${v?`晚撤 ${v}h`:'晚撤 0h'}</option>`).join('')}</select>`:''}
+     ${(()=>{const SS='width:100%;padding:3px 4px;border:1px solid var(--line);border-radius:6px;background:#fff;color:#1b1f24;font-size:12px',H=[0,0.5,1,1.5,2,2.5,3,4,5,6,8],
+        row=(lab,sel)=>`<div style="margin-top:4px;font-size:11px;color:#555;line-height:1.3"><div>${lab}</div>${sel}</div>`,
+        opt=(v,cur)=>`<option value="${v}"${cur===v?' selected':''}>${v?`+${v} 小時`:'不加時'}</option>`;
+        if(x.type==='show')return row('延長展出（正常 8h 以外）',`<select data-ot="${x.i}" style="${SS}" aria-label="延長展出時數">${H.map(v=>opt(v,x.ot)).join('')}</select>`)+row(x===lastShow?'展後出場（進出場超時）':'晚間進出場（布撤展）',`<select data-io2="${x.i}" style="${SS}" aria-label="晚間進出場時數">${H.map(v=>opt(v,x.io2)).join('')}</select>`);
+        if(x.type==='out')return row('出場計費',`<select data-hr="${x.i}" style="${SS}" aria-label="撤場計費">${[0,4,5,6,7,8].map(v=>`<option value="${v}"${x.hr===v?' selected':''}>${v?`按時 ${v}h`:'整天 9h'}</option>`).join('')}</select>`)+row('加班（正常 9h 以外）',`<select data-ot="${x.i}" style="${SS}" aria-label="加班時數">${H.map(v=>opt(v,x.ot)).join('')}</select>`);
+        return row('加班（正常 9h 以外）',`<select data-ot="${x.i}" style="${SS}" aria-label="加班時數">${H.map(v=>opt(v,x.ot)).join('')}</select>`)})()}
      <div style="font-size:12px;margin-top:4px;text-align:right">${$$n(fee(x))}</div></td>`;
   const otl=cd.filter(x=>x.ot),r=costOf(A,c);
-  modal(wiz?'開新展覽 2／3：週曆試算':'週曆試算表',`<div class="row" style="margin-top:0"><label class="h" style="margin:0">展出第一天<input type="date" id="cl_s" value="${esc(c.start)}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label>
+  modal(wiz?'開新展覽 2／3：週曆試算':'週曆試算表',`<div class="row" style="margin-top:0"><label class="h" style="margin:0">展出第一天<input type="date" min="2000-01-01" max="2099-12-31" id="cl_s" value="${esc(c.start)}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label>
       <label class="h" style="margin:0">進場天<input class="num" style="display:block;margin-top:4px" type="number" min="0" id="cl_in" value="${c.inD}"></label><label class="h" style="margin:0">展出天<input class="num" style="display:block;margin-top:4px" type="number" min="1" id="cl_sh" value="${c.showD}"></label><label class="h" style="margin:0">撤場天<input class="num" style="display:block;margin-top:4px" type="number" min="0" id="cl_out" value="${c.outD}"></label>
-      <span class="hint" style="align-self:flex-end">${cfgName(A)}・每日 進出場 ${$$n(f0)}／展出 ${$$n(f1)}</span><label class="chk" style="align-self:flex-end;margin:0"><input type="checkbox" id="cl_night"${c.night?' checked':''}>展完當晚連夜撤場</label><span style="margin-left:auto;align-self:flex-start;text-align:right;font-size:12px;line-height:1.5;color:#9aa0a8">進出場 08:00–17:00（9h）・展出 09:00–17:00（8h）<br>超時至少 1 小時，超過半小時按 1 小時、不足按半小時<br>展後翌日白天撤場可按時計（進出場費÷9，至少 4h；07–08 免費 1h）<br>翌日有空檔仍連夜撤場，超時費加收 20%</span></div>
+      <span class="hint" style="align-self:flex-end">${cfgName(A)}・每日 進出場 ${$$n(f0)}／展出 ${$$n(f1)}</span><label class="chk" style="align-self:flex-end;margin:0"><input type="checkbox" id="cl_night"${c.night?' checked':''}>連夜退場（清潔費加 1 日）</label><span style="margin-left:auto;align-self:flex-start;text-align:right;font-size:12px;line-height:1.5;color:#9aa0a8">進出場 08:00–17:00（9h）・展出 09:00–17:00（8h）<br>超時至少 1 小時，超過半小時按 1 小時、不足按半小時<br>出場日可按時計（進出場費÷9 取整數，至少 4h；07–08 免費）<br>每天都能臨時加時：延長展出按展出超時費；晚間進出場按進出場超時費<br>最後一天展後出場，若翌日沒租仍連夜撤場加 20%<br>進場期間 04–07 免費</span></div>
     <div class="scroll"><table style="border-collapse:separate;border-spacing:4px;width:100%;min-width:640px;table-layout:fixed"><tr>${['一','二','三','四','五','六','日'].map((d,i)=>`<th style="font-weight:500;color:${i>4?'var(--bad)':'var(--mute)'};font-size:13px">星期${d}</th>`).join('')}</tr>
       ${weeks.map(w=>`<tr>${w.map(cell).join('')}</tr>`).join('')}</table></div>
-    ${otl.length?`<h3>加班明細</h3><ul class="list">${otl.map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()}（${'日一二三四五六'[x.wd]}）${x.type==='show'?'展出延長':'進出場加班'} ${x.ot} 小時 × ${A.length} 區</span><span>${$$n((x.type==='show'?o1:o0)*x.ot)}</span></li>`).join('')}</ul>`:''}
-    ${cd.some(x=>x.hr)||r.nH?`<h3>撤場計費</h3><ul class="list">${cd.filter(x=>x.hr).map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} 白天撤場按時 ${Math.max(4,x.hr)} 小時（進出場費÷9）× ${A.length} 區</span><span>${$$n(f0*Math.max(4,x.hr)/9)}</span></li>`).join('')}${r.nH?`<li style="cursor:default"><span>${lastShow.d.getMonth()+1}/${lastShow.d.getDate()} 晚間連夜撤場 ${r.nH} 小時（超時費 ×1.2）× ${A.length} 區</span><span>${$$n(r.ngAll)}</span></li>`:''}</ul>`:''}
-    <h3>合計</h3><ul class="list"><li style="cursor:default"><span>場地費（未稅，含假日加成與加班）</span><span>${$$n(r.rent)}</span></li><li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
+    ${otl.length?`<h3>加班明細</h3><ul class="list">${otl.map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()}（${'日一二三四五六'[x.wd]}）${x.type==='show'?'延長展出':'進出場加班'} ${x.ot} 小時 × ${A.length} 區</span><span>${$$n((x.type==='show'?o1:o0)*x.ot)}</span></li>`).join('')}</ul>`:''}
+    ${cd.some(x=>x.hr||x.io2)?`<h3>撤場計費</h3><ul class="list">${cd.filter(x=>x.hr).map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} 出場按時計（${r.rows.map(o=>`${o.a} ${o.hrH}h×${o.hu.toLocaleString()}`).join('、')}）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.hr,0))}</span></li>`).join('')}${cd.filter(x=>x.io2).map(x=>{const m=x===lastShow&&c.outD===0?1.2:1;return `<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} ${x===lastShow?'展後出場超時':'晚間進出場'} ${x.io2} 小時（進出場超時費${m>1?' ×1.2，翌日沒租':''}）× ${A.length} 區</span><span>${$$n(A.reduce((t,a)=>t+Math.round(FEE[a][2]*m),0)*x.io2)}</span></li>`}).join('')}</ul>`:''}
+    <h3>各區結算（照館方結算單算法）</h3>
+    <div class="scroll"><table class="tier" style="font-size:13px;min-width:720px"><tr><th>區</th><th style="text-align:right">該區攤位數</th><th style="text-align:right">應使用攤位數</th><th style="text-align:right">提早進場</th><th style="text-align:right">按時出場</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">訂金 20%</th><th style="text-align:right">尾款 80%×比例</th><th style="text-align:right">5% VAT</th><th style="text-align:right">總場地費（含稅）</th></tr>
+    ${r.rows.map(o=>`<tr><td class="u">${o.a}</td><td style="text-align:right">${o.off}</td><td style="text-align:right"><input class="num" style="width:64px" type="number" min="0" max="${o.off}" data-pa="${o.a}:used" value="${o.auto?'':o.used}" placeholder="${o.used}" title="空白＝依平面圖上這區的攤位數（含空攤）自動算"></td>
+      <td style="text-align:right"><input class="num" style="width:48px" type="number" min="0" data-pa="${o.a}:inX" value="${o.inX||''}" placeholder="0" title="這區比其他區多幾天進場"> 天</td>
+      <td style="text-align:right">${cd.some(x=>x.hr)?`<input class="num" style="width:48px" type="number" min="4" max="9" data-pa="${o.a}:hr" value="${((c.pa||{})[o.a]||{}).hr||''}" placeholder="${o.hrH||4}" title="這區按時出場的時數（空白＝依週曆）"> h`:'—'}</td>
+      <td style="text-align:right">${$$n(o.sub)}</td><td style="text-align:right">${$$n(o.dep)}</td><td style="text-align:right">${$$n(o.tail)}<br><small style="color:var(--mute)">${o.used}/${o.off}</small></td><td style="text-align:right">${$$n(o.vat)}</td><td style="text-align:right"><b>${$$n(o.tot)}</b></td></tr>`).join('')}
+    <tr><td colspan="5"><b>總場地費合計</b></td><td style="text-align:right">${$$n(r.gross)}</td><td></td><td></td><td style="text-align:right">${$$n(r.tax)}</td><td style="text-align:right"><b>${$$n(r.rent+r.tax)}</b></td></tr></table></div>
+    <p class="hint">尾款只收「應使用攤位數 ÷ 該區攤位數」的比例，所以一區沒用滿時場地費會打折；應使用攤位數空白時，依平面圖這區的攤位數（含空攤）自動帶入。</p>
+    <h3>合計</h3><ul class="list"><li style="cursor:default"><span>場地費（未稅，訂金＋尾款）</span><span>${$$n(r.rent)}</span></li><li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
     <li style="cursor:default"><span>清潔費（${A.length} 區 × ${r.days} 天，含稅）</span><span>${$$n(r.clean)}</span></li><li style="cursor:default"><span>場地＋清潔（含稅）</span><span>${$$n(r.base)}</span></li></ul>
     ${(()=>{const R=r.rent+r.tax,d0=cd[0].d,ds=n=>{const d=new Date(d0);d.setDate(d.getDate()-n);return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} 前`};
       return `<h3>繳款時程（依場地費含稅 ${$$n(R)} 計，起租日 ${d0.getFullYear()}/${d0.getMonth()+1}/${d0.getDate()}）</h3><ul class="list">
@@ -869,11 +887,11 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
       ${!r.ex.dd.length&&!r.ex.hi.length?'<li style="cursor:default;color:var(--mute)"><span>雙層／超高：在平面圖雙擊攤位勾選，這裡會自動帶入</span><span></span></li>':''}
     </ul>
     <div class="g4" style="margin-top:8px">
-      <div><label>冷氣牌價（元／區／時）</label><input type="number" min="0" data-ex="acP" value="${esc((c.ex||{}).acP||'')}" placeholder="依當時公告"></div>
-      <div><label>進出場冷氣總時數</label><input type="number" min="0" data-ex="acH" value="${esc((c.ex||{}).acH||'')}"></div>
-      <div><label>護理師人數</label><input type="number" min="0" data-ex="nN" value="${esc((c.ex||{}).nN??1)}"></div>
-      <div><label>護理師日薪</label><input type="number" min="0" data-ex="nP" value="${esc((c.ex||{}).nP||'')}" placeholder="自聘"></div>
-      <div style="grid-column:span 2"><label>保全費（與館方合約商議定，含稅）</label><input type="number" min="0" data-ex="sec" value="${esc((c.ex||{}).sec||'')}"></div>
+      <div><label>冷氣牌價（元／區／時）</label><input type="number" min="0" data-xf="acP" value="${esc((c.ex||{}).acP||'')}" placeholder="依當時公告"></div>
+      <div><label>進出場冷氣總時數</label><input type="number" min="0" data-xf="acH" value="${esc((c.ex||{}).acH||'')}"></div>
+      <div><label>護理師人數</label><input type="number" min="0" data-xf="nN" value="${esc((c.ex||{}).nN??1)}"></div>
+      <div><label>護理師日薪</label><input type="number" min="0" data-xf="nP" value="${esc((c.ex||{}).nP||'')}" placeholder="自聘"></div>
+      <div style="grid-column:span 2"><label>保全費（與館方合約商議定，含稅）</label><input type="number" min="0" data-xf="sec" value="${esc((c.ex||{}).sec||'')}"></div>
     </div>
     <ul class="list" style="margin-top:8px">
       ${r.ex.ac?`<li style="cursor:default"><span>冷氣 ${A.length} 區 × ${(c.ex||{}).acH} 時（未稅＋5%）</span><span>${$$n(r.ex.ac*1.05)}</span></li>`:''}
@@ -891,14 +909,15 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
       ・收費標準調整時依合約簽訂時基準。</p></details>`);
   const re=()=>{save();costCal(wiz);renderPane()};
   if(wiz){$('#mbox').insertAdjacentHTML('beforeend',`<p class="hint">金額先依目前選區（${esc(cfgName(A))}）暫估，匯入廠商名單後會依實際開區重算。</p><div class="row" style="justify-content:space-between;margin-top:14px"><button class="btn ghost" id="wz_back">上一步</button><button class="btn pri" id="wz_next">下一步：上傳廠商總表</button></div>`);$('#wz_back').onclick=()=>wizard();$('#wz_next').onclick=wizUpload}
-  $('#cl_s').onchange=e=>{c.start=e.target.value;c.otd={};c.hol={};c.outH={};re()};
+  $('#cl_s').onchange=e=>{if(!/^(20\d\d)-\d\d-\d\d$/.test(e.target.value))return toast('年份請填四碼');c.start=e.target.value;c.otd={};c.hol={};c.outH={};re()};
   [['#cl_in','inD'],['#cl_sh','showD'],['#cl_out','outD']].forEach(([id,k])=>$(id).onchange=e=>{c[k]=Math.max(k==='showD'?1:0,+e.target.value||0);c.otd={};c.hol={};c.outH={};re()});
   $$('[data-ot]').forEach(s=>s.onchange=()=>{c.otd={...(c.otd||{}),[s.dataset.ot]:+s.value};re()});
   $$('[data-hol]').forEach(k=>k.onchange=()=>{c.hol={...(c.hol||{}),[k.dataset.hol]:k.checked};re()});
   $$('[data-hr]').forEach(s=>s.onchange=()=>{c.outH={...(c.outH||{}),[s.dataset.hr]:+s.value};re()});
-  $('[data-nh]')&&($('[data-nh]').onchange=e=>{c.nightH=+e.target.value;re()});
+  $$('[data-io2]').forEach(s=>s.onchange=()=>{c.iod={...(c.iod||{}),[s.dataset.io2]:+s.value};re()});
   $('#cl_night').onchange=e=>{c.night=e.target.checked;re()};
-  $$('[data-ex]').forEach(i=>i.onchange=()=>{c.ex={...(c.ex||{}),[i.dataset.ex]:i.value===''?'':Math.max(0,+i.value||0)};re()});
+  $$('[data-pa]').forEach(i=>i.onchange=()=>{const[a,k]=i.dataset.pa.split(':');c.pa={...(c.pa||{})};c.pa[a]={...(c.pa[a]||{}),[k]:i.value===''?'':Math.max(0,+i.value||0)};re()});
+  $$('[data-xf]').forEach(i=>i.onchange=()=>{c.ex={...(c.ex||{}),[i.dataset.xf]:i.value===''?'':Math.max(0,+i.value||0)};re()});
 }
 function renderPane(){
   const P=$('#pane');
@@ -1176,11 +1195,11 @@ $('#dashBtn').onclick=()=>{S.dash=!S.dash;syncDash();save();render();toast(S.das
 const WZ={step:1,c:null,A:[],U:''};
 function wizard(){const c=S.cost;
   if(!c.start){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7)+60);c.start=d.toISOString().slice(0,10)}
-  modal('開新展覽 1／3：檔期',`<div class="g4"><div style="grid-column:span 2"><label>展出第一天</label><input type="date" id="w_s" value="${esc(c.start)}"></div><div><label>展覽幾天</label><input type="number" min="1" id="w_sh" value="${c.showD}"></div><div></div>
+  modal('開新展覽 1／3：檔期',`<div class="g4"><div style="grid-column:span 2"><label>展出第一天</label><input type="date" min="2000-01-01" max="2099-12-31" id="w_s" value="${esc(c.start)}"></div><div><label>展覽幾天</label><input type="number" min="1" id="w_sh" value="${c.showD}"></div><div></div>
     <div><label>進場幾天</label><input type="number" min="0" id="w_in" value="${c.inD}"></div><div><label>退場幾天</label><input type="number" min="0" id="w_out" value="${c.outD}"></div><div style="grid-column:span 2;align-self:end"><label><input type="checkbox" id="w_night"${c.night?' checked':''} style="width:auto"> 連夜退場</label></div></div>
     <p class="hint">進場天數會加在展期前面、退場加在後面；下一步會跳出週曆，可以逐日選加班時數、勾假日。</p>
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn pri" id="w_next">下一步：看週曆試算</button></div>`);
-  $('#w_next').onclick=()=>{const ns=$('#w_s').value,sh=Math.max(1,+$('#w_sh').value||1),ii=Math.max(0,+$('#w_in').value||0),oo=Math.max(0,+$('#w_out').value||0);
+  $('#w_next').onclick=()=>{const ns=$('#w_s').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(ns)||+ns.slice(0,4)<2000||+ns.slice(0,4)>2099)return toast('年份請填四碼（2000–2099）');const sh=Math.max(1,+$('#w_sh').value||1),ii=Math.max(0,+$('#w_in').value||0),oo=Math.max(0,+$('#w_out').value||0);
     if(ns!==c.start||sh!==c.showD||ii!==c.inD||oo!==c.outD){c.otd={};c.hol={};c.outH={}}Object.assign(c,{start:ns,showD:sh,inD:ii,outD:oo,night:$('#w_night').checked});
     if(!['I','J','K','L','M','N'].some(a=>S.areas[a]))S.areas.I=S.areas.J=S.areas.K=true;save();renderPane();costCal(true)}}
 function wizUpload(){modal('開新展覽 3／3：廠商總表',`<p>請上傳報名系統匯出的廠商總表 Excel（需有「公司名稱」與「攤位數」欄位；有「展區」欄位會自動變成類別）。</p>
