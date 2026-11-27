@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V50</title>
+<title>攤位圖規劃台 V53</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -144,7 +144,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V50</small></h1>
+  <h1>攤位圖規劃台<small>V53</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -496,16 +496,17 @@ function generate(silent){S.started=true;
   if(!silent)push();
   const keep={isl:g.isl,islW:g.islW},cur=S.floor;if(CV.isl)g.isl=CV.isl;if(CV.islW)g.islW=CV.islW;
   const parts={'1F':[],'4F':[]};
-  if(floors.length===1)parts[floors[0]]=reqs;
+  const czA={},czHard={};['1F','4F'].forEach(f=>{if(!floors.includes(f))return;CZ(f).forEach(z=>{const o=czA[z.cat]||(czA[z.cat]={});o[f]=(o[f]||0)+z.w*z.d*0.55;if(z.hard)czHard[z.cat]=1})});const czU={},czNeed={};reqs.forEach(q=>{if(czA[q.cat])czNeed[q.cat]=(czNeed[q.cat]||0)+q.w*q.d});
+  if(floors.length===1){parts[floors[0]]=reqs;reqs.forEach(q=>{const o=czA[q.cat];if(!o||q.pin)return;const f=floors[0];if(!o[f])return;const u=czU[q.cat]||(czU[q.cat]={});if(czHard[q.cat]||(u[f]||0)+q.w*q.d<=o[f]){u[f]=(u[f]||0)+q.w*q.d;q.inCz=1}})}
   else{const cap={},used={'1F':0,'4F':0};floors.forEach(f=>{const c=capFor(f);cap[f]=FLOORS[f].areas.filter(a=>S.areas[a]).reduce((t,a)=>t+c[a],0)||1});
-    const czA={};['1F','4F'].forEach(f=>{if(!floors.includes(f))return;CZ(f).forEach(z=>{const o=czA[z.cat]||(czA[z.cat]={});o[f]=(o[f]||0)+z.w*z.d})});const czU={};
-    const pf=q=>{if(!q.pin&&czA[q.cat]){const o=czA[q.cat],u=czU[q.cat]||(czU[q.cat]={}),fl=Object.keys(o);const f=fl.sort((a,b)=>(u[a]||0)/o[a]-(u[b]||0)/o[b])[0];u[f]=(u[f]||0)+q.w*q.d*1.6;return f}const f=q.pin?(q.pin.length===2?q.pin:fOf(q.pin)):pinF(S.cats.find(c=>c.id===q.cat));return floors.includes(f)?f:''},free=[];
+
+    const pf=q=>{if(!q.pin&&czA[q.cat]){const o=czA[q.cat],u=czU[q.cat]||(czU[q.cat]={}),fl=Object.keys(o);const f=fl.sort((a,b)=>(u[a]||0)/o[a]-(u[b]||0)/o[b])[0];if(czHard[q.cat]||(u[f]||0)+q.w*q.d<=o[f]){u[f]=(u[f]||0)+q.w*q.d;q.inCz=1;return f}const nf=fl.find(x=>used[x]+q.w*q.d/9<=cap[x]*0.92);if(nf)return nf}const f=q.pin?(q.pin.length===2?q.pin:fOf(q.pin)):pinF(S.cats.find(c=>c.id===q.cat));return floors.includes(f)?f:''},free=[];
     for(const q of reqs){const f=pf(q);if(f){parts[f].push(q);used[f]+=q.w*q.d/9}else free.push(q)}
     floors.forEach(f=>{const o=f==='1F'?'4F':'1F';if(!floors.includes(o))return;const lim=cap[f]*0.9;if(used[f]<=lim)return;
       const mv=parts[f].filter(q=>!czA[q.cat]&&pf(q)===f&&!q.pin&&!pinHard(S.cats.find(c=>c.id===q.cat))).sort((a,b)=>a.w*a.d-b.w*b.d);while(used[f]>lim&&mv.length){const q=mv.shift();parts[f].splice(parts[f].indexOf(q),1);parts[o].push(q);used[f]-=q.w*q.d/9;used[o]+=q.w*q.d/9;q.moved=1}});
     for(const q of free){const u=q.w*q.d/9,f=(used['1F']+u)/cap['1F']<=(used['4F']+u)/cap['4F']?'1F':'4F';parts[f].push(q);used[f]+=u}
     parts['1F'].sort((a,b)=>b.w*b.d-a.w*a.d);parts['4F'].sort((a,b)=>b.w*b.d-a.w*a.d)}
-  const fail=[],per={},pinMiss=[];let all=[];
+  const fail=[],per={},pinMiss=[],CZMISS={};let all=[];
   for(const f of['1F','4F']){
     if(!floors.includes(f)){S.plans[f]=LK[f];continue}
     setFloor(f,true);HOT=hotFor(CV);LOCKS=LK[f].concat(wallCut(LK[f]));
@@ -522,9 +523,9 @@ function generate(silent){S.started=true;
     parts[f].sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||CO.indexOf(a.cat)-CO.indexOf(b.cat)||b.w*b.d-a.w*a.d);
     const aHome=a=>new Set(zs.filter(z=>z.y0<FL.areaY[a][1]-E&&z.y1>FL.areaY[a][0]+E));
     for(const q of parts[f]){PC={home:q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?aHome(q.pin):homes[q.cat],cent:cents[q.cat]&&cents[q.cat].n?{x:cents[q.cat].x/cents[q.cat].n,y:cents[q.cat].y/cents[q.cat].n}:null};
-      {const mine=CZ(f).filter(z=>z.cat===q.cat),others=CZ(f).filter(z=>z.cat!==q.cat);ALLOW=mine.length?(r=>mine.some(z=>czIn(r,z))):others.length?(r=>!others.some(z=>ov(z,r))):null}
+      const czMine=CZ(f).filter(z=>z.cat===q.cat),czOth=CZ(f).filter(z=>z.cat!==q.cat&&z.hard),czAvoid=czOth.length?(r=>!czOth.some(z=>ov(z,r))):null;ALLOW=czMine.length&&(q.inCz||czHard[q.cat])?(r=>czMine.some(z=>czIn(r,z))):czAvoid;
       const qc=S.cats.find(c=>c.id===q.cat),hA=pinHard(qc)&&pinA(qc)&&FL.areas.includes(pinA(qc))?pinA(qc):'',inA=a=>zs.filter(z=>(z.y0<FL.areaY[a][1]-E&&z.y1>FL.areaY[a][0]+E)),onlyA=(a,fn)=>{const W=FL.wall,[y0,y1]=FL.areaY[a],sv=LOCKS;LOCKS=LOCKS.concat([{x:W.x0-50,y:W.y0-50,w:W.x1-W.x0+100,d:y0-W.y0+50},{x:W.x0-50,y:y1,w:W.x1-W.x0+100,d:W.y1-y1+50}]);try{return fn()}finally{LOCKS=sv}};
-      const pz=q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?PC.home:null,r=!zs.length?null:hA&&!pz?onlyA(hA,()=>placeOne(inA(hA),q.w,q.d)):((pz&&onlyA(q.pin,()=>placeOne(inA(q.pin),q.w,q.d)))||placeOne(zs,q.w,q.d));if(pz&&r){const cy=r.y+r.d/2;if(cy<FL.areaY[q.pin][0]||cy>FL.areaY[q.pin][1])pinMiss.push(`${q.name} 指定 ${q.pin} 區，但那區放不下 ${rd(q.w)}×${rd(q.d)}m，先排到旁邊`)}if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}ALLOW=null;if(!r&&CZ(f).some(z=>z.cat===q.cat))pinMiss.push(`${(S.cats.find(c=>c.id===q.cat)||{}).name} 的範圍放不下 ${q.name||q.tag}（${rd(q.w)}×${rd(q.d)}m），請把範圍拉大`);if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,pin:q.pin||undefined,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
+      let pz=q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?PC.home:null,r=!zs.length?null:hA&&!pz?onlyA(hA,()=>placeOne(inA(hA),q.w,q.d)):((pz&&onlyA(q.pin,()=>placeOne(inA(q.pin),q.w,q.d)))||placeOne(zs,q.w,q.d));if(pz&&r){const cy=r.y+r.d/2;if(cy<FL.areaY[q.pin][0]||cy>FL.areaY[q.pin][1])pinMiss.push(`${q.name} 指定 ${q.pin} 區，但那區放不下 ${rd(q.w)}×${rd(q.d)}m，先排到旁邊`)}if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}if(!r&&czMine.length&&!czHard[q.cat]){ALLOW=czAvoid;r=placeOne(zs,q.w,q.d)}ALLOW=null;if(!r&&czMine.length){const k=q.cat,o=CZMISS[k]||(CZMISS[k]={n:0,max:0,sz:''});o.n++;if(q.w*q.d>o.max){o.max=q.w*q.d;o.sz=`${rd(q.w)}×${rd(q.d)}m`}}if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,pin:q.pin||undefined,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
     PC=null;
     if(g.fill){const em=[];fillRest(zs,em);em.forEach(r=>out.push({id:uid(),no:'',name:'',cat:'n',tag:'',empty:true,...r}));gatherEmpty(out)}
     LOCKS=[];if(g.number)autoNumber(out);
@@ -533,7 +534,7 @@ function generate(silent){S.started=true;
   g.isl=keep.isl;g.islW=keep.islW;
   const stay=floors.includes(cur);setFloor(stay?cur:floors[0],stay);sel.clear();
   const sold=all.filter(b=>!b.empty&&!b.stage);
-  lastGen={n:sold.length,u:rd(sold.reduce((a,b)=>a+units(b),0)),e:all.length-sold.length,eu:rd(all.filter(b=>b.empty).reduce((a,b)=>a+units(b),0)),fail:fail.map(f=>f.name||f.tag),v:CV,pinWarn:(()=>{const w=pinMiss.concat(reqs.filter(q=>q.pin&&!(q.pin.length===2?floors.includes(q.pin):S.areas[q.pin])).map(q=>`${q.name} 指定 ${q.pin}${q.pin.length===1?' 區':''}，但那裡沒開，先排到其他地方`));S.cats.forEach(c=>{const A0=pinA(c),F0=pinF(c);if(!c.pin)return;let tot=0,out=0;['1F','4F'].forEach(f=>(S.plans[f]||[]).forEach(b=>{if(b.cat!==c.id||b.empty)return;tot++;const fy=b.y+b.d/2,ok=f===F0&&(!A0||(fy>=FLOORS[f].areaY[A0][0]&&fy<FLOORS[f].areaY[A0][1]));if(!ok)out++}));if(out)w.push(`${c.name} 指定 ${pinLabel(c.pin)}，放不下 ${out}／${tot} 家，已排到旁邊`)});return w})(),per:floors.length>1?per:null};
+  lastGen={n:sold.length,u:rd(sold.reduce((a,b)=>a+units(b),0)),e:all.length-sold.length,eu:rd(all.filter(b=>b.empty).reduce((a,b)=>a+units(b),0)),fail:fail.map(f=>f.name||f.tag),v:CV,pinWarn:(()=>{const w=Object.entries(CZMISS).map(([k,o])=>{const c=S.cats.find(c=>c.id===k)||{name:'?'},cap=Math.round(Object.values(czA[k]||{}).reduce((a,b)=>a+b,0)/9),need=Math.round((czNeed[k]||0)/9),fl=Object.keys(czA[k]||{});return `${c.name}：畫的範圍大約只排得下 ${cap} 攤，名單要 ${need} 攤，有 ${o.n} 家放不下（最大 ${o.sz}）。範圍${fl.length?`只畫在 ${fl.join('、')}`:''}；請把範圍拉大、在另一層也框一塊，或點範圍改成「大概在這區」（太多就長到旁邊）。`}).concat(pinMiss).concat(reqs.filter(q=>q.pin&&!(q.pin.length===2?floors.includes(q.pin):S.areas[q.pin])).map(q=>`${q.name} 指定 ${q.pin}${q.pin.length===1?' 區':''}，但那裡沒開，先排到其他地方`));S.cats.forEach(c=>{const A0=pinA(c),F0=pinF(c);if(!c.pin)return;let tot=0,out=0;['1F','4F'].forEach(f=>(S.plans[f]||[]).forEach(b=>{if(b.cat!==c.id||b.empty)return;tot++;const fy=b.y+b.d/2,ok=f===F0&&(!A0||(fy>=FLOORS[f].areaY[A0][0]&&fy<FLOORS[f].areaY[A0][1]));if(!ok)out++}));if(out)w.push(`${c.name} 指定 ${pinLabel(c.pin)}，放不下 ${out}／${tot} 家，已排到旁邊`)});return w})(),per:floors.length>1?per:null};
   commit();if(!silent)toast(`已配置 ${sold.length} 家${floors.length>1?`（1F ${per['1F'].n}、4F ${per['4F'].n}）`:''}${fail.length?`，${fail.length} 家放不下`:''}`);
 }
 
@@ -570,7 +571,7 @@ function build(o){
     [u.y,u.y+u.d].forEach(y=>{if(y>W.y0+1&&y<W.y1-1&&!inCut(y))h+=`<line x1="${W.x0}" y1="${y}" x2="${W.x1}" y2="${y}" stroke="#111" stroke-width="0.6"/><line class="limhit" x1="${W.x0}" y1="${y}" x2="${W.x1}" y2="${y}" stroke="transparent" stroke-width="2"><title>Alt＋拖曳移動；雙擊可回原位或拿掉</title></line>`})});
   {const cut=wallCut();cut.forEach(r=>h+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.d}" fill="rgba(120,126,134,.28)" pointer-events="none"/>`);
     if(cut.length){const big=cut.reduce((a,b)=>b.w*b.d>a.w*a.d?b:a);if(big.w>8&&big.d>3)h+=txt(big.x+big.w/2,big.y+big.d/2+0.6,'隔板外（不排攤位）',Math.min(2.4,big.w/9),{a:'middle',fill:'#6b7280',b:1})}}
-  CZ(S.floor).forEach((z,i)=>{const c=S.cats.find(c=>c.id===z.cat)||{color:'#888',name:'?'};h+=`<g data-cz="${i}" style="pointer-events:${mode==='cz'?'all':'none'};cursor:pointer"><rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.d}" fill="${esc(c.color)}" fill-opacity="0.12" stroke="${esc(c.color)}" stroke-width="0.6" stroke-dasharray="1.2 0.7" style="filter:saturate(1.6) brightness(.8)"/>${txt(z.x+0.6,z.y+2,`${c.name} 範圍`,1.6,{fill:'#333',b:1})}</g>`});
+  CZ(S.floor).forEach((z,i)=>{const c=S.cats.find(c=>c.id===z.cat)||{color:'#888',name:'?'};h+=`<g data-cz="${i}" style="pointer-events:${mode==='cz'?'all':'none'};cursor:pointer"><rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.d}" fill="${esc(c.color)}" fill-opacity="0.12" stroke="${esc(c.color)}" stroke-width="0.6" stroke-dasharray="1.2 0.7" style="filter:saturate(1.6) brightness(.8)"/>${txt(z.x+0.6,z.y+2,`${c.name}${z.hard?' 範圍（只能在框裡）':' 大概在這區'}`,1.6,{fill:'#333',b:1})}</g>`});
   h+=SITE_TOP;
   if(mode==='aisle'&&!o.print){MAIN.forEach(a=>h+=`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.d}" fill="rgba(11,92,173,.10)" stroke="#0b5cad" stroke-width="0.3" stroke-dasharray="1 0.6" pointer-events="none"/>`);MAIN.slice(1).forEach(a=>h+=txt(FL.colX[1]/2,a.y+a.d/2+0.6,'↕ 拖曳上下移動',1.6,{a:'middle',fill:'#0b5cad',b:1}));h+=txt(FL.cx,FL.bands[1][0]+12,'↔ 拖曳',1.6,{a:'middle',fill:'#0b5cad',b:1,rot:90});const m=LIM();['t','b'].forEach(k=>{if(m[k]!=null)h+=txt(FL.colR[1]-12,m[k]+(k==='t'?-1:2.2),'↕ 拖曳隔牆',1.4,{a:'middle',fill:'#111',b:1})})}
   h+=txt((W.x0+W.x1)/2,W.y0-5,S.titles[S.floor]||FL.title,3.2,{a:'middle',fill:'#111',b:1});
@@ -588,9 +589,10 @@ function snapW(p){const W=FL.wall;let ox=0,oy=0;if(mode==='lane'){const z=buildZ
   [W.x0,W.x1].forEach(v=>{if(Math.abs(p.x-v)<1.5)x=v});[W.y0,W.y1].forEach(v=>{if(Math.abs(p.y-v)<1.5)y=v});
   B().filter(b=>b.wall).forEach(b=>{const h=b.w>=b.d,ends=h?[[b.x,b.y+b.d/2],[b.x+b.w,b.y+b.d/2]]:[[b.x+b.w/2,b.y],[b.x+b.w/2,b.y+b.d]];ends.forEach(([ex,ey])=>{if(Math.hypot(p.x-ex,p.y-ey)<1.2){x=ex;y=ey}})});return{x,y}}
 function czPick(r,idx){const cats=S.cats.filter(c=>c.id!=='n');modal(idx==null?'這個範圍給哪個展區？':'修改展區範圍',`<p class="hint">${r.w}×${r.d}m・約 ${Math.round(r.w*r.d/9)} 格（含走道）</p><div class="cats">${cats.map(c=>`<button class="btn" data-czc="${c.id}" style="justify-content:flex-start;gap:8px;width:100%;margin-bottom:6px"><i class="sw" style="background:${esc(c.color)}"></i>${esc(c.name)}</button>`).join('')}</div>
-  <p class="hint">排攤位時，這個展區只排在它的範圍裡（同一展區可以畫好幾塊、也可以 1F／4F 各一塊）；其他展區會避開這個範圍。</p>`);
-  $$('[data-czc]').forEach(b=>b.onclick=()=>{push();S.cz=S.cz||{'1F':[],'4F':[]};S.cz[S.floor]=S.cz[S.floor]||[];if(idx==null)S.cz[S.floor].push({...r,cat:b.dataset.czc});else S.cz[S.floor][idx].cat=b.dataset.czc;closeM();commit();toast('已設定範圍，按「產生建議排法」就會照範圍排')})}
-function czMenu(i){const z=CZ(S.floor)[i];if(!z)return;const c=S.cats.find(c=>c.id===z.cat)||{name:'?'};modal('展區範圍',`<p><b>${esc(c.name)}</b>・${z.w}×${z.d}m</p><div class="row"><button class="btn" id="cz_chg">改成別的展區</button><button class="btn ghost warn" id="cz_del">刪除這個範圍</button><button class="btn" id="cz_ok">不動</button></div>`);
+  <div class="row" style="margin:8px 0 0"><label class="chk" style="margin:0"><input type="radio" name="cz_m" value="soft"${r.hard?'':' checked'}>大概在這區（建議）：太多就長到旁邊、太少就把空位讓給別人</label><label class="chk" style="margin:0"><input type="radio" name="cz_m" value="hard"${r.hard?' checked':''}>只能在框裡：放不下就列出來，別的展區也不能進來</label></div>
+  <p class="hint">範圍裡大約 55% 能放攤位、其餘是走道：例 ${r.w}×${r.d}m 約可放 ${Math.round(r.w*r.d*0.55/9)} 攤。同一展區可以畫好幾塊、也可以 1F／4F 各一塊；「只能在框裡」的範圍其他展區會避開；「大概在這區」有剩空位時，其他展區可以補進來。</p>`);
+  $$('[data-czc]').forEach(b=>b.onclick=()=>{push();S.cz=S.cz||{'1F':[],'4F':[]};S.cz[S.floor]=S.cz[S.floor]||[];const hard=($('[name=cz_m]:checked')||{}).value==='hard'||undefined;if(idx==null)S.cz[S.floor].push({x:r.x,y:r.y,w:r.w,d:r.d,cat:b.dataset.czc,hard});else{const zz=S.cz[S.floor][idx];zz.cat=b.dataset.czc;zz.hard=hard;delete zz.soft}closeM();commit();toast('已設定範圍，按「產生建議排法」就會照範圍排')})}
+function czMenu(i){const z=CZ(S.floor)[i];if(!z)return;const c=S.cats.find(c=>c.id===z.cat)||{name:'?'};modal('展區範圍',`<p><b>${esc(c.name)}</b>・${z.w}×${z.d}m・${z.hard?'只能在框裡':'大概在這區（太多長到旁邊）'}・約可放 ${Math.round(z.w*z.d*0.55/9)} 攤</p><div class="row"><button class="btn" id="cz_chg">改成別的展區</button><button class="btn ghost warn" id="cz_del">刪除這個範圍</button><button class="btn" id="cz_ok">不動</button></div>`);
   $('#cz_ok').onclick=closeM;$('#cz_del').onclick=()=>{push();S.cz[S.floor].splice(i,1);closeM();commit()};$('#cz_chg').onclick=()=>czPick(z,i)}
 function wdAxis(a,b){return Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x:b.x,y:a.y}:{x:a.x,y:b.y}}
 function wdPrev(){let g=$('#wdPrev');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='wdPrev';g.setAttribute('pointer-events','none');svg.appendChild(g)}
@@ -1528,7 +1530,20 @@ $('#impBtn').onclick=()=>$('#fileXls').click();
 $('#pdfBtn').onclick=()=>$('#filePdf').click();$('#blankPdf').onclick=()=>$('#filePdf').click();
 $('#filePdf').onchange=e=>{const fs=[...e.target.files];e.target.value='';importPlanPdf(fs)};
 $('#fileXls').onchange=e=>{const f=e.target.files[0];if(f)importXls(f);e.target.value=''};
-$('#wipe').onclick=()=>{const keep=B().filter(b=>b.locked);if(B().length===keep.length)return toast('已經是空的');push();S.plans[S.floor]=keep;sel.clear();lastGen=null;commit();toast(`${S.floor} 已清空${keep.length?`（保留 ${keep.length} 個鎖定攤位）`:''}，按「↶ 上一步」可救回`)};
+$('#wipe').onclick=()=>{const cnt=f=>{const L=S.plans[f]||[];return{b:L.filter(b=>!b.stage).length,lk:L.filter(b=>b.locked&&!b.stage).length,st:L.filter(b=>b.stage&&!b.wall&&!b.lane).length,w:L.filter(b=>b.wall).length,ln:L.filter(b=>b.lane).length,cz:CZ(f).length,lim:Object.keys((S.lim||{})[f]||{}).length}},c=cnt(S.floor);
+  modal('清空',`<p>要清掉哪些東西？</p>
+    <label class="chk"><input type="radio" name="wx_f" value="cur" checked>只清 ${S.floor}</label><label class="chk"><input type="radio" name="wx_f" value="all">1F、4F 都清</label>
+    <div style="margin-top:8px"><label class="chk"><input type="checkbox" id="wx_b" checked>攤位（${S.floor} ${c.b} 個）</label>
+    <label class="chk"><input type="checkbox" id="wx_lk">連鎖定的攤位也清（${c.lk} 個）</label>
+    <label class="chk"><input type="checkbox" id="wx_d" checked>自己畫的走道、隔板、舞台（${c.ln+c.w+c.st} 個）</label>
+    <label class="chk"><input type="checkbox" id="wx_z" checked>展區範圍框（${c.cz} 個）</label>
+    <label class="chk"><input type="checkbox" id="wx_l" checked>上下隔牆、走道位置回原位</label></div>
+    <p class="hint">清完按「↶」可以救回。</p>
+    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="wx_no">取消</button><button class="btn pri warn" id="wx_go">清空</button></div>`);
+  $('#wx_no').onclick=closeM;
+  $('#wx_go').onclick=()=>{const fl=$('[name=wx_f]:checked').value==='all'?['1F','4F']:[S.floor],o={b:$('#wx_b').checked,lk:$('#wx_lk').checked,d:$('#wx_d').checked,z:$('#wx_z').checked,l:$('#wx_l').checked};push();
+    fl.forEach(f=>{S.plans[f]=(S.plans[f]||[]).filter(b=>b.stage?!o.d:(!o.b||(b.locked&&!o.lk)));if(o.z&&S.cz)S.cz[f]=[];if(o.l){S.lim[f]={};S.off[f]={v:0,h:[0,0,0]}}});
+    setFloor(S.floor,true);sel.clear();lastGen=null;closeM();commit();toast(`已清空 ${fl.join('、')}，按「↶」可救回`)}};
 $('#setBtn').onclick=settings;$('#numBtn').onclick=numDialog;$('#expBtn').onclick=exportDialog;
 document.addEventListener('pointerdown',e=>{const m=$('.menu');if(m.open&&!m.contains(e.target))m.open=false});
 document.addEventListener('keydown',e=>{
