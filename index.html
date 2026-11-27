@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V31</title>
+<title>攤位圖規劃台 V32</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -135,7 +135,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V31</small></h1>
+  <h1>攤位圖規劃台<small>V32</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -825,7 +825,7 @@ function costPane(P){
   const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),need=+S.gen.totalU||B().filter(b=>!b.empty).reduce((t,b)=>t+units(b),0);
   const inp=(k,l,max)=>`<label class="h" style="margin:0">${l}<input class="num" style="display:block;width:100%;margin-top:4px" type="number" min="0" max="${max||60}" data-c="${k}" value="${c[k]}"></label>`;
   const cd=calDays(c);
-  let h=`<div class="sec"><span class="h">檔期</span><div class="row" style="margin:0 0 8px"><label class="h" style="margin:0">展出第一天<input type="date" min="2000-01-01" max="2099-12-31" data-c="start" value="${esc(c.start||'')}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label><button class="btn pri" id="calBtn" style="align-self:flex-end">開啟週曆試算表</button></div>${cd?`<p class="hint">已用週曆：假日 ${cd.filter(x=>x.holi).length} 天（自動抓六日），逐日加班在週曆裡填。</p>`:''}<span class="h">天數</span><div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">${inp('inD','進場天')}${inp('outD','撤場天')}${inp('showD','展出天')}${cd?'':inp('holiD','其中假日展出天')+inp('otH','展出延長（小時）',200)+inp('ioH','進出場加班（小時）',200)}</div>
+  let h=`<div class="sec"><span class="h">檔期</span><div class="row" style="margin:0 0 8px"><label class="h" style="margin:0">展出第一天<input type="date" min="2000-01-01" max="2099-12-31" data-c="start" value="${esc(c.start||'')}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label><button class="btn pri" id="calBtn" style="align-self:flex-end">開啟週曆試算表</button><button class="btn" id="stBtn" style="align-self:flex-end">結算單（粗估）</button></div>${cd?`<p class="hint">已用週曆：假日 ${cd.filter(x=>x.holi).length} 天（自動抓六日），逐日加班在週曆裡填。</p>`:''}<span class="h">天數</span><div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">${inp('inD','進場天')}${inp('outD','撤場天')}${inp('showD','展出天')}${cd?'':inp('holiD','其中假日展出天')+inp('otH','展出延長（小時）',200)+inp('ioH','進出場加班（小時）',200)}</div>
     <label class="chk"><input type="checkbox" data-c="night"${c.night?' checked':''}>連夜退場（清潔費加 1 日；展後出場時數在週曆最後一個展出日填）</label></div>`;
   if(!A.length){P.innerHTML=h+`<p class="hint">請先在生成器選區。</p>`;bindCost();return}
   const r=costOf(A);
@@ -848,7 +848,7 @@ function costPane(P){
   P.innerHTML=h;bindCost();
 }
 function bindCost(){$$('[data-c]').forEach(i=>i.onchange=()=>{const k=i.dataset.c;S.cost[k]=i.type==='checkbox'?i.checked:i.type==='date'?i.value:Math.max(0,+i.value||0);if(k==='inD'||k==='showD'||k==='outD'||k==='start'){S.cost.otd={};S.cost.hol={}}save();renderPane()});
-  $('#calBtn')&&($('#calBtn').onclick=()=>costCal())}
+  $('#calBtn')&&($('#calBtn').onclick=()=>costCal());$('#stBtn')&&($('#stBtn').onclick=()=>settleSheet())}
 /* 週曆試算表：星期一～日橫排；進場／撤場加在展期頭尾；逐日選加班時數 */
 function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7)+60);c.start=d.toISOString().slice(0,10)}
   const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]);if(!A.length)return toast('請先選區');
@@ -875,8 +875,8 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
       ${weeks.map(w=>`<tr>${w.map(cell).join('')}</tr>`).join('')}</table></div>
     ${otl.length?`<h3>加班明細</h3><ul class="list">${otl.map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()}（${'日一二三四五六'[x.wd]}）${x.type==='show'?'延長展出':'進出場加班'} ${x.ot} 小時 × ${A.length} 區</span><span>${$$n((x.type==='show'?o1:o0)*x.ot)}</span></li>`).join('')}</ul>`:''}
     ${cd.some(x=>x.hr||x.io2)?`<h3>撤場計費</h3><ul class="list">${cd.filter(x=>x.hr).map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} 出場按時計（${r.rows.map(o=>`${o.a} ${o.hrH}h×${o.hu.toLocaleString()}`).join('、')}）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.hr,0))}</span></li>`).join('')}${cd.filter(x=>x.io2).map(x=>{const m=x===lastShow&&c.outD===0?1.2:1;return `<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} ${x===lastShow?'展後出場超時':'晚間進出場'} ${x.io2} 小時（進出場超時費${m>1?' ×1.2，翌日沒租':''}）× ${A.length} 區</span><span>${$$n(A.reduce((t,a)=>t+Math.round(FEE[a][2]*m),0)*x.io2)}</span></li>`}).join('')}</ul>`:''}
-    <h3>各區結算（照館方結算單算法）</h3>
-    <div class="scroll"><table class="tier" style="font-size:13px;min-width:720px"><tr><th>區</th><th style="text-align:right">該區攤位數</th><th style="text-align:right">應使用攤位數</th><th style="text-align:right">提早進場</th><th style="text-align:right">按時出場</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">訂金 20%</th><th style="text-align:right">尾款 80%×比例</th><th style="text-align:right">5% VAT</th><th style="text-align:right">總場地費（含稅）</th></tr>
+    <h3>各區結算（照館方結算單算法）<button class="btn" id="cl_st" style="float:right;font-size:12px">看結算單格式</button></h3>
+    <div class="scroll"><table class="tier" style="font-size:13px;min-width:720px"><tr><th>區</th><th style="text-align:right">該區攤位數</th><th style="text-align:right">應使用攤位數</th><th style="text-align:right">提早進場</th><th style="text-align:right">按時出場</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">訂金 20%</th><th style="text-align:right;color:#6b7280">尾款 80%×比例<br><small>粗估</small></th><th style="text-align:right;color:#6b7280">5% VAT<br><small>粗估</small></th><th style="text-align:right;color:#6b7280">總場地費（含稅）<br><small>粗估</small></th></tr>
     ${r.rows.map(o=>`<tr><td class="u">${o.a}</td><td style="text-align:right">${o.off}</td><td style="text-align:right"><input class="num" style="width:64px" type="number" min="0" max="${o.off}" data-pa="${o.a}:used" value="${o.auto?'':o.used}" placeholder="${o.used}" title="空白＝依平面圖上這區的攤位數（含空攤）自動算"></td>
       <td style="text-align:right"><input class="num" style="width:48px" type="number" min="0" data-pa="${o.a}:inX" value="${o.inX||''}" placeholder="0" title="這區比其他區多幾天進場"> 天</td>
       <td style="text-align:right">${cd.some(x=>x.hr)?`<input class="num" style="width:48px" type="number" min="4" max="9" data-pa="${o.a}:hr" value="${((c.pa||{})[o.a]||{}).hr||''}" placeholder="${o.hrH||4}" title="這區按時出場的時數（空白＝依週曆）"> h`:'—'}</td>
@@ -926,6 +926,7 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
   $$('[data-hr]').forEach(s=>s.onchange=()=>{c.outH={...(c.outH||{}),[s.dataset.hr]:+s.value};re()});
   $$('[data-io2]').forEach(s=>s.onchange=()=>{c.iod={...(c.iod||{}),[s.dataset.io2]:+s.value};re()});
   $('#cl_night').onchange=e=>{c.night=e.target.checked;re()};
+  $('#cl_st')&&($('#cl_st').onclick=()=>settleSheet(()=>costCal(wiz)));
   $$('[data-pa]').forEach(i=>i.onchange=()=>{const[a,k]=i.dataset.pa.split(':');c.pa={...(c.pa||{})};c.pa[a]={...(c.pa[a]||{}),[k]:i.value===''?'':Math.max(0,+i.value||0)};re()});
   $$('[data-xf]').forEach(i=>i.onchange=()=>{c.ex={...(c.ex||{}),[i.dataset.xf]:i.value===''?'':Math.max(0,+i.value||0)};re()});
 }
@@ -1233,15 +1234,63 @@ function wizAreas(){const U=WZ.U||+S.gen.totalU||0,cap={...capFor('1F'),...capFo
   $('#wa_back').onclick=()=>wizUpload();
   $('#wa_next').onclick=()=>{if(!WZ.A.length)return toast('至少選一區');all.forEach(a=>S.areas[a]=WZ.A.includes(a));S.lim={'1F':{},'4F':{}};setFloor(fOf(WZ.A[0]));save();renderPane();costCal(true)}}
 function wizRun(){closeM();if(WZ.U){autoFill(WZ.U,WZ.N,WZ.A);wizSummary()}else{WZ.flow=false;tab='gen';syncTabs();render();renderPane();fitHall();toast('區域與費用已設定；有名單後按「匯入名單」就會照這些區排')}}
+/* 仿館方「展覽場地租用結算單」：上半（小計、訂金）照需求即可確定；尾款、VAT、總場地費要展後依實際使用攤位數結算，這裡用平面圖粗估 */
+function settleSheet(back){const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>S.areas[a]);if(!A.length)return toast('請先選區');const cd=calDays(c);if(!cd)return toast('請先填展出第一天');
+  const T=c.times||(c.times={io:'08:00-17:00',sh:'09:00-17:00'}),r=costOf(A),lastI=c.inD+c.showD-1;
+  const D=d=>`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`,add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x},
+    tp=(t,h)=>{const[a,b]=t.split(':').map(Number),m=a*60+b+Math.round(h*60);return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`},
+    ioS=T.io.split('-')[0]||'08:00',ioE=T.io.split('-')[1]||'17:00',shE=T.sh.split('-')[1]||'17:00',N=v=>'$'+Math.round(v).toLocaleString('en-US');
+  const range=L=>L.length?(L.length>1?`${D(L[0].d)} - ${D(L[L.length-1].d)}`:D(L[0].d)):'';
+  const sheet=o=>{const a=o.a,f=FEE[a],pa=(c.pa||{})[a]||{},ins=cd.filter(x=>x.type==='in'),shs=cd.filter(x=>x.type==='show'),outs=cd.filter(x=>x.type==='out'),R=[];
+    const row=(k,d,t,u,n,un)=>R.push({k,d,t,u,n,un,v:u*n});
+    const inDays=[...Array(o.inX).keys()].reverse().map(k=>({d:add(cd[0].d,-k-1)})).concat(ins);
+    if(inDays.length)row('進場',range(inDays),T.io,f[0],inDays.length,'日');
+    ins.filter(x=>x.ot).forEach(x=>row('進場加班',D(x.d),`${ioE} - ${tp(ioE,x.ot)}`,f[2],x.ot,'時'));
+    if(shs.length)row('展出',range(shs),T.sh,f[1],shs.length,'日');
+    shs.filter(x=>x.holi).forEach(x=>row('假日加收5%',D(x.d),T.sh,Math.round(f[1]*0.05),1,'日'));
+    shs.filter(x=>x.ot).forEach(x=>row('展出延長',D(x.d),`${shE} - ${tp(shE,x.ot)}`,f[3],x.ot,'時'));
+    shs.filter(x=>x.io2).forEach(x=>{const m=x.i===lastI&&c.outD===0?1.2:1;row(x.i===lastI?'出場超時':'晚間進出場',D(x.d),`${shE} - ${tp(shE,x.io2)}`,Math.round(f[2]*m),x.io2,'時')});
+    outs.forEach(x=>{if(x.hr){const h=Math.max(4,+pa.hr||x.hr);row('出場',D(x.d),`07:00 - ${tp('08:00',h)}`,Math.round(f[0]/9),h,'時')}else row('出場',D(x.d),T.io,f[0],1,'日');if(x.ot)row('出場加班',D(x.d),`${ioE} - ${tp(ioE,x.ot)}`,f[2],x.ot,'時')});
+    const td='style="border:1px solid #333;padding:3px 6px"',tr='style="border:1px solid #333;padding:3px 6px;text-align:right"',est='background:#f3f4f6;color:#6b7280';
+    return `<h3 style="margin-top:18px">(${String.fromCharCode(65+A.indexOf(a))}) ${a}區 共計${o.off}個攤位</h3>
+    <div class="scroll"><table style="border-collapse:collapse;width:100%;min-width:640px;font-size:13px;color:#1b1f24;background:#fff">
+    <tr>${['項目','日期','每日使用時間','單價','單位','','金額'].map(h=>`<th ${td}>${h}</th>`).join('')}</tr>
+    ${R.map(x=>`<tr><td ${td}>${x.k}</td><td style="border:1px solid #333;padding:3px 6px;text-align:center">${x.d}</td><td style="border:1px solid #333;padding:3px 6px;text-align:center">${x.t}</td><td ${tr}>${N(x.u)}</td><td ${tr}>${x.n}</td><td ${td}>${x.un}</td><td ${tr}>${N(x.v)}</td></tr>`).join('')}
+    <tr><td colspan="6" ${tr}>小計--場地費（未稅）</td><td ${tr}><b>${N(o.sub)}</b></td></tr>
+    <tr><td colspan="6" ${tr}>訂金＝場地費之20%</td><td ${tr}><b>${N(o.dep)}</b></td></tr>
+    <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">尾款＝實際使用攤位數 <b>${o.used}</b> 之80%　<small>（粗估：${o.auto?'依平面圖':'手動填'} ${o.used}／${o.off}）</small></td><td ${tr}>${N(o.tail)}</td></tr>
+    <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">5%VAT（粗估）</td><td ${tr}>${N(o.vat)}</td></tr>
+    <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">總場地費（含稅）（粗估）</td><td ${tr}>${N(o.tot)}</td></tr></table></div>`};
+  const R2=(r.rows.reduce((t,o)=>t+o.sub,0)),dep=r.rows.reduce((t,o)=>t+o.dep,0);
+  modal('場地租用結算單（粗估）',`<div class="row" style="margin-top:0;align-items:flex-end">
+      <label class="h" style="margin:0">進出場時段<input id="st_io" value="${esc(T.io)}" style="display:block;width:130px;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px"></label>
+      <label class="h" style="margin:0">展出時段<input id="st_sh" value="${esc(T.sh)}" style="display:block;width:130px;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px"></label>
+      <span class="hint" style="margin:0">場地 ${esc(cfgName(A))}・${D(add(cd[0].d,-Math.max(0,...r.rows.map(o=>o.inX))))} ～ ${D(cd[cd.length-1].d)}</span></div>
+    <div class="note">白底的部分（各項目、<b>小計</b>、<b>訂金 20%</b>）照您填的需求就能確定；<span style="background:#f3f4f6;padding:0 4px">灰底</span>的尾款、VAT、總場地費要展後依實際使用攤位數結算，這裡先用平面圖的攤位數粗估。</div>
+    ${r.rows.map(sheet).join('')}
+    <h3>彙總</h3><ul class="list">
+      <li style="cursor:default"><span>場地費小計合計（未稅）</span><span><b>${$$n(R2)}</b></span></li>
+      <li style="cursor:default"><span>訂金合計（場地費之 20%，未稅）</span><span><b>${$$n(dep)}</b></span></li>
+      <li style="cursor:default;color:#6b7280"><span>尾款合計（粗估）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
+      <li style="cursor:default;color:#6b7280"><span>5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
+      <li style="cursor:default;font-size:15px"><span><b>總場地費合計（含稅，粗估）</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
+      <li style="cursor:default;color:#6b7280"><span>若全部攤位都用滿（上限）</span><span>${$$n(Math.round(R2*1.05))}</span></li></ul>
+    <div class="row" style="justify-content:space-between;margin-top:14px">${back?'<button class="btn ghost" id="st_back">上一步</button>':'<span></span>'}<button class="btn" id="st_cal">改需求（週曆）</button></div>`);
+  ['io','sh'].forEach(k=>$('#st_'+k).onchange=e=>{const v=e.target.value.replace(/\s/g,'').replace(/[～~–—]/g,'-');if(!/^\d\d:\d\d-\d\d:\d\d$/.test(v))return toast('格式例：09:30-17:30');c.times={...T,[k]:v};save();settleSheet(back)});
+  $('#st_cal').onclick=()=>costCal();$('#st_back')&&($('#st_back').onclick=back)}
 function wizSummary(){WZ.flow=false;const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),r=costOf(A),g=lastGen||{n:0,u:0,e:0,eu:0,fail:[]};
   modal('開新展覽：完成',`<div class="note ok">已排 <b>${g.n}</b> 家・${g.u} 攤${g.e?`；空攤 ${g.e} 個`:''}${g.fail.length?`；<b style="color:var(--bad)">放不下 ${g.fail.length} 家</b>`:''}</div>
     ${g.pinWarn&&g.pinWarn.length?`<div class="note">${g.pinWarn.map(esc).join('<br>')}</div>`:''}
     <ul class="list"><li style="cursor:default"><span>開區</span><span><b>${esc(cfgName(A))}</b></span></li>
     <li style="cursor:default"><span>檔期</span><span>${esc(S.cost.start||'')}・進場 ${S.cost.inD}＋展出 ${S.cost.showD}＋退場 ${S.cost.outD} 天</span></li>
-    <li style="cursor:default"><span>場地費（未稅）</span><span>${$$n(r.rent)}</span></li><li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li><li style="cursor:default"><span>清潔費（含稅）</span><span>${$$n(r.clean)}</span></li>
-    <li style="cursor:default"><span>合計（未稅）</span><span>${$$n(r.net)}</span></li><li style="cursor:default;font-size:16px"><span><b>合計（含稅）</b></span><span><b>${$$n(r.total)}</b></span></li></ul>
-    <div class="row" style="justify-content:space-between;margin-top:14px"><button class="btn" id="ws_cal">看週曆明細</button><button class="btn pri" id="ws_ok">開始調整平面圖</button></div>`);
-  $('#ws_cal').onclick=()=>costCal();$('#ws_ok').onclick=()=>{closeM();fitHall()}}
+    <li style="cursor:default"><span>場地費小計（未稅）</span><span><b>${$$n(r.gross)}</b></span></li>
+    <li style="cursor:default"><span>訂金 20%（未稅）</span><span><b>${$$n(r.rows.reduce((t,o)=>t+o.dep,0))}</b></span></li>
+    <li style="cursor:default;color:#6b7280"><span>尾款 80%×使用比例（粗估，依平面圖）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
+    <li style="cursor:default;color:#6b7280"><span>5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
+    <li style="cursor:default"><span>總場地費（含稅，粗估）</span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
+    <li style="cursor:default;color:#6b7280"><span>清潔費（含稅）</span><span>${$$n(r.clean)}</span></li></ul>
+    <div class="row" style="justify-content:space-between;margin-top:14px"><span><button class="btn pri" id="ws_st">看各區結算單（粗估）</button> <button class="btn" id="ws_cal">看週曆</button></span><button class="btn" id="ws_ok">開始調整平面圖</button></div>`);
+  $('#ws_st').onclick=()=>settleSheet(wizSummary);$('#ws_cal').onclick=()=>costCal();$('#ws_ok').onclick=()=>{closeM();fitHall()}}
 $('#wizBtn').onclick=()=>{WZ.A=null;WZ.U=0;WZ.N=0;wizard()};
 $('#impBtn').onclick=()=>$('#fileXls').click();
 $('#fileXls').onchange=e=>{const f=e.target.files[0];if(f)importXls(f);e.target.value=''};
