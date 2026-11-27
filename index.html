@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V55</title>
+<title>攤位圖規劃台 V56</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -144,7 +144,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V55</small></h1>
+  <h1>攤位圖規劃台<small>V56</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -305,7 +305,7 @@ const pilFull=b=>PILL.filter(p=>inside(p,b)).length, pilHalf=b=>PILL.filter(p=>o
 const pilNear=b=>PILL.filter(p=>!ov(p,b)&&rdist(b,{x:p.x+p.w/2,y:p.y+p.d/2})<p.w/2+1.2).length;
 const bill=b=>Math.max(0,units(b)-pilFull(b));
 function check(){const m=new Map(),L=B(),add=(id,s)=>{if(!m.has(id))m.set(id,[]);m.get(id).push(s)};
-  L.forEach((b,i)=>{if(!inHall(b))add(b.id,'超出展場');if(!b.wall&&pilHalf(b))add(b.id,'柱子只壓到一半：要嘛整根包進攤位，要嘛完全避開');for(let j=i+1;j<L.length;j++){const c=L[j];if(ov(b,c)){add(b.id,'與 '+(c.no||c.name||'另一攤位')+' 重疊');add(c.id,'與 '+(b.no||b.name||'另一攤位')+' 重疊')}}});return m}
+  L.forEach((b,i)=>{if(!inHall(b))add(b.id,'超出展場');if(!b.wall&&!(S.gen.eatPil!==false)&&pilHalf(b))add(b.id,'柱子只壓到一半：要嘛整根包進攤位，要嘛完全避開');for(let j=i+1;j<L.length;j++){const c=L[j];if(ov(b,c)){add(b.id,'與 '+(c.no||c.name||'另一攤位')+' 重疊');add(c.id,'與 '+(b.no||b.name||'另一攤位')+' 重疊')}}});return m}
 
 /* ===== floor setup ===== */
 /* 走道偏移：橫向主走道可上下移、中央直向走道可左右移；大門位置不變 */
@@ -393,7 +393,7 @@ function laneSplit(zs,lanes){if(!lanes.length)return zs;let cur=zs;
   return cur}
 const avail=z=>z.side==='L'?z.fc-z.fe:z.fe-z.fc;
 function mkCol(z,x,w){const C=Math.round(w/CELL),R=Math.round((z.y1-z.y0)/CELL),occ=new Uint8Array(C*R),pil=new Uint8Array(C*R);
-  if(PILL.length)for(let j=0;j<R;j++)for(let i=0;i<C;i++){const c={x:x+i*CELL,y:z.y0+j*CELL,w:CELL,d:CELL};if(PILL.some(p=>ov(p,c)))pil[j*C+i]=1}
+  if(PILL.length&&!(S.gen.eatPil!==false))for(let j=0;j<R;j++)for(let i=0;i<C;i++){const c={x:x+i*CELL,y:z.y0+j*CELL,w:CELL,d:CELL};if(PILL.some(p=>ov(p,c)))pil[j*C+i]=1}
   const col={x,w,C,R,occ,pil,isl:[],ft:0,fb:R};
   if(z.strip){col.isl.push({r0:0,r1:R,ot:z.openTop,ob:z.openBot});col.ft=col.fb=R}
   return col}
@@ -435,8 +435,8 @@ const CZ=f=>((S.cz||{})[f]||[]),czIn=(r,z)=>r.x>=z.x-E&&r.y>=z.y-E&&r.x+r.w<=z.x
 function placeOne(zs,bw,bd){
   let best=null;const zgap=(a,b)=>Math.max(0,a.x0-b.x1,b.x0-a.x1)+Math.max(0,a.y0-b.y1,b.y0-a.y1),zp=z=>{if(!PC||!PC.home)return 0;if(!z.strip)return PC.home.has(z)?0:180;for(const h of PC.home)if(zgap(h,z)<8)return 0;return 140},cp=r=>PC&&PC.cent?1.2*Math.hypot(r.x+r.w/2-PC.cent.x,r.y+r.d/2-PC.cent.y):0;const big=bw*bd>=36-E,orients=Math.abs(bw-bd)<E?[[bw,bd]]:[[bw,bd],[bd,bw]],Dc=Math.round(S.gen.isl/CELL);
   const tryIsl=(z,col,isl,ys,xs,pen,extra)=>{for(const yi of ys)for(const xi of xs){if(!fits(z,col,isl,xi,yi,extra.wc,extra.dc,big))continue;
-    const r0={x:col.x+xi*CELL,y:z.y0+yi*CELL,w:extra.w,d:extra.d};if(PILL.length&&PILL.some(p=>ov(p,r0)&&(!big||!inside(p,r0))))continue;if(LOCKS.length&&LOCKS.some(l=>ov(l,r0)))continue;if(ALLOW&&!ALLOW(r0))continue;
-    const r=r0,s=score(r)+pen+zp(z)+cp(r)+(PILL.length&&pilNear(r)?6:0);if(!best||s<best.s)best={s,z,col,isl,xi,yi,...extra,r}}};
+    const r0={x:col.x+xi*CELL,y:z.y0+yi*CELL,w:extra.w,d:extra.d};if(PILL.length&&!(S.gen.eatPil!==false)&&PILL.some(p=>ov(p,r0)&&(!big||!inside(p,r0))))continue;if(LOCKS.length&&LOCKS.some(l=>ov(l,r0)))continue;if(ALLOW&&!ALLOW(r0))continue;
+    const r=r0,s=score(r)+pen+zp(z)+cp(r)+(PILL.length&&!(S.gen.eatPil!==false)&&pilNear(r)?6:0);if(!best||s<best.s)best={s,z,col,isl,xi,yi,...extra,r}}};
   for(const z of zs)for(const[w,d]of orients){
     if(d>z.y1-z.y0+E||(z.strip&&d>3+E))continue;
     const wc=Math.round(w/CELL),dc=Math.round(d/CELL),ex={w,d,wc,dc},rng=(a,b)=>{const o=[];for(let i=a;i<=b;i++)o.push(i);return o};
@@ -855,7 +855,7 @@ function genPane(P){
   const cap={...capFor('1F'),...capFor('4F')},allA=['I','J','K','L','M','N'],selA=allA.filter(a=>S.areas[a]),capSel=selA.reduce((t,a)=>t+cap[a],0),need=U||tu;
   const recs=recommend(need),warn=selWarn(),cs=selA.length?costOf(selA):null;
   const chip=(f,a)=>`<label class="chip" title="${f}・${a} 區：依目前島的設定約 ${cap[a]} 格（標準攤位圖 ${OFFICIAL[a]} 格）・展出場租 ${$$n(FEE[a][1])}／日"><input type="checkbox" data-area="${a}" data-f="${f}"${S.areas[a]?' checked':''}>${a} 區 <small style="opacity:.8">${cap[a]} 格</small></label>`;
-  P.innerHTML=`<div class="sec"><span class="h">① 這次規模</span>
+  P.innerHTML=`<div class="sec"><span class="h" style="display:flex;align-items:center;gap:8px">① 這次規模<span class="seg" style="margin-left:auto;display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden" title="吃柱：攤位可以蓋到柱子（今年版本做法）；不吃柱：攤位避開柱子"><button class="btn${(S.gen.eatPil!==false)?' pri':''}" data-eat="1" style="border:0;border-radius:0;padding:4px 10px">吃柱</button><button class="btn${(S.gen.eatPil!==false)?'':' pri'}" data-eat="0" style="border:0;border-radius:0;padding:4px 10px">不吃柱</button></span></span>
     <div class="row" style="margin:0"><input class="num" style="width:84px" id="g_totalU" type="number" min="0" value="${esc(g.totalU)}" aria-label="總攤數">攤　<input class="num" style="width:84px" id="g_total" type="number" min="0" value="${esc(g.total)}" aria-label="廠商家數">家
       <button class="btn" id="g_rec">建議開區</button></div>
     <p class="hint">先填總攤數就能建議開幾樓、幾區；超過 1,300 攤會上下樓各開 2 區或 3 區。</p>
@@ -909,6 +909,7 @@ ${useEx?`<div class="sec"><span class="h">③ 名單</span>
   $('#goCost')&&($('#goCost').onclick=e=>{e.preventDefault();tab='cost';syncTabs();renderPane()});
   $$('[data-t]').forEach(tr=>tr.querySelectorAll('[data-k]').forEach(inp=>inp.onchange=()=>{const t=g.tiers[+tr.dataset.t],k=inp.dataset.k;t[k]=k==='cat'?inp.value:Math.max(k==='n'?0:0.5,+inp.value||0);save();renderPane()}));
   $$('[data-rm]').forEach(b=>b.onclick=()=>{g.tiers.splice(+b.dataset.rm,1);save();renderPane()});
+  $$('[data-eat]').forEach(x=>x.onclick=()=>{S.gen.eatPil=x.dataset.eat==='1';save();renderPane();render();toast((S.gen.eatPil!==false)?'吃柱：攤位可以蓋到柱子，按「重排」生效':'不吃柱：攤位避開柱子，按「重排」生效')});
   $('#t_add').onclick=()=>{g.tiers.push({cw:1,cd:1,n:1,cat:S.cats[0].id});save();renderPane()};
   const opt=(id,k,f=v=>v)=>{const el=$(id);if(el)el.onchange=e=>{g[k]=f(e.target.type==='checkbox'?e.target.checked:e.target.value);save();if(['useEx','isl','islW','gap','strips'].includes(k))renderPane()}};
   opt('#g_strip','strips');opt('#g_ex','useEx');opt('#g_fill','fill');opt('#g_num','number');opt('#g_gap','gap',v=>+v);opt('#g_islW','islW',v=>+v);
