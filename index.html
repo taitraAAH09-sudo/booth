@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V40</title>
+<title>攤位圖規劃台 V41</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -143,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V40</small></h1>
+  <h1>攤位圖規劃台<small>V41</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -416,7 +416,7 @@ function score(r){let s=1e9;for(const h of HOT)s=Math.min(s,rdist(r,h)*h.k);
 function mark(col,xi,yi,wc,dc){for(let j=yi;j<yi+dc;j++)for(let i=xi;i<xi+wc;i++)col.occ[j*col.C+i]=1}
 let PC=null,LC={id:'',t:0},LOCKS=[];
 function placeOne(zs,bw,bd){
-  let best=null;const zp=z=>PC&&PC.home&&!z.strip&&!PC.home.has(z)?180:0,cp=r=>PC&&PC.cent?0.45*Math.hypot(r.x+r.w/2-PC.cent.x,r.y+r.d/2-PC.cent.y):0;const big=bw*bd>=36-E,orients=Math.abs(bw-bd)<E?[[bw,bd]]:[[bw,bd],[bd,bw]],Dc=Math.round(S.gen.isl/CELL);
+  let best=null;const zgap=(a,b)=>Math.max(0,a.x0-b.x1,b.x0-a.x1)+Math.max(0,a.y0-b.y1,b.y0-a.y1),zp=z=>{if(!PC||!PC.home)return 0;if(!z.strip)return PC.home.has(z)?0:180;for(const h of PC.home)if(zgap(h,z)<8)return 0;return 140},cp=r=>PC&&PC.cent?1.2*Math.hypot(r.x+r.w/2-PC.cent.x,r.y+r.d/2-PC.cent.y):0;const big=bw*bd>=36-E,orients=Math.abs(bw-bd)<E?[[bw,bd]]:[[bw,bd],[bd,bw]],Dc=Math.round(S.gen.isl/CELL);
   const tryIsl=(z,col,isl,ys,xs,pen,extra)=>{for(const yi of ys)for(const xi of xs){if(!fits(z,col,isl,xi,yi,extra.wc,extra.dc,big))continue;
     const r0={x:col.x+xi*CELL,y:z.y0+yi*CELL,w:extra.w,d:extra.d};if(PILL.length&&PILL.some(p=>ov(p,r0)&&(!big||!inside(p,r0))))continue;if(LOCKS.length&&LOCKS.some(l=>ov(l,r0)))continue;
     const r=r0,s=score(r)+pen+zp(z)+cp(r)+(PILL.length&&pilNear(r)?6:0);if(!best||s<best.s)best={s,z,col,isl,xi,yi,...extra,r}}};
@@ -455,7 +455,7 @@ function gatherEmpty(out){const isE=b=>b.empty&&!b.name&&!b.locked&&!b.stage,isO
   const near=e=>{const c=C(e),cnt={};out.forEach(o=>{if(!isO(o))return;const q=C(o);if(Math.abs(q.x-c.x)<7&&Math.abs(q.y-c.y)<7)cnt[o.cat]=(cnt[o.cat]||0)+1});return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]};
   for(let pass=0;pass<6;pass++){let ch=0;const em=out.filter(isE).sort((a,b)=>dist(b)-dist(a));
     for(const e of em){const de=dist(e),nc=near(e);let best=null,bs=1e9;
-      for(const o of out){if(!isO(o)||Math.abs(o.w-e.w)>E||Math.abs(o.d-e.d)>E)continue;const d=dist(o);if(d>=de-3)continue;const sc=d+(o.cat===nc?0:12);if(sc<bs){bs=sc;best=o}}
+      for(const o of out){if(!isO(o)||Math.abs(o.w-e.w)>E||Math.abs(o.d-e.d)>E)continue;if(nc&&o.cat!==nc)continue;const d=dist(o);if(d>=de-3)continue;const sc=d;if(sc<bs){bs=sc;best=o}}
       if(best){[best.x,e.x]=[e.x,best.x];[best.y,e.y]=[e.y,best.y];ch++}}
     if(!ch)break}}
 function autoNumber(bs){FL.areas.forEach(a=>{const list=bs.filter(b=>areaOf(b)===a),xs=[...new Set(list.map(b=>rd(b.x)))].sort((p,q)=>p-q);
@@ -493,13 +493,15 @@ function generate(silent){S.started=true;
     setFloor(f,true);HOT=hotFor(CV);LOCKS=LK[f].concat(wallCut(LK[f]));
     const zs=buildZones(g),out=LK[f].slice();
     /* 同類別集中：依類別需求比例，把區塊（由主十字往外）分給各類別 */
-    const P0=HOT[0],nz=zs.filter(z=>!z.strip).map(z=>{const cx=(z.x0+z.x1)/2,cy=(z.y0+z.y1)/2;return{z,cap:(z.x1-z.x0)*(z.y1-z.y0),k:Math.round(Math.hypot(cx-P0.x,cy-P0.y)/25)*10+((Math.atan2(cy-P0.y,cx-P0.x)+Math.PI*1.5)%(Math.PI*2))}}).sort((a,b)=>a.k-b.k);
+    const P0=HOT[0],nz=zs.filter(z=>!z.strip).map(z=>{const cx=(z.x0+z.x1)/2,cy=(z.y0+z.y1)/2;return{z,cx,cy,cap:(z.x1-z.x0)*(z.y1-z.y0)}});
+    {const rows=[...new Set(nz.map(o=>Math.round(o.z.y0)))].sort((a,b)=>a-b);nz.forEach(o=>{const r=rows.indexOf(Math.round(o.z.y0));o.k=r*1e4+(r%2?-o.cx:o.cx)});nz.sort((a,b)=>a.k-b.k)}
     const dem={};parts[f].forEach(q=>dem[q.cat]=(dem[q.cat]||0)+q.w*q.d);const D=Object.values(dem).reduce((a,b)=>a+b,0)||1,T=nz.reduce((a,b)=>a+b.cap,0)||1;
     const homes={},pinned=new Set();Object.keys(dem).forEach(c=>{const a=pinA(S.cats.find(k=>k.id===c));if(a&&FL.areas.includes(a)){const[y0,y1]=FL.areaY[a];homes[c]=new Set(nz.filter(o=>o.z.y0<y1-E&&o.z.y1>y0+E).map(o=>o.z));homes[c].forEach(z=>pinned.add(z));delete dem[c]}});
     {const rest=nz.filter(o=>!pinned.has(o.z));if(rest.length&&pinned.size){nz.length=0;rest.forEach(o=>nz.push(o))}}
     let acc=0;const D2=Object.values(dem).reduce((a,b)=>a+b,0)||1,T2=nz.reduce((a,b)=>a+b.cap,0)||1;Object.keys(dem).sort((a,b)=>dem[b]-dem[a]).forEach(c=>{const a0=acc/D2,a1=(acc+dem[c])/D2;acc+=dem[c];let cum=0;homes[c]=new Set();
       nz.forEach(o=>{const z0=cum/T2,z1=(cum+o.cap)/T2;cum+=o.cap;if(z0<a1-1e-6&&z1>a0+1e-6)homes[c].add(o.z)})});
-    const cents={};
+    const cents={},dAll={};parts[f].forEach(q=>dAll[q.cat]=(dAll[q.cat]||0)+q.w*q.d);const CO=Object.keys(dAll).sort((a,b)=>(pinA(S.cats.find(k=>k.id===b))?1:0)-(pinA(S.cats.find(k=>k.id===a))?1:0)||dAll[b]-dAll[a]);
+    parts[f].sort((a,b)=>CO.indexOf(a.cat)-CO.indexOf(b.cat)||b.w*b.d-a.w*a.d);
     for(const q of parts[f]){PC={home:homes[q.cat],cent:cents[q.cat]&&cents[q.cat].n?{x:cents[q.cat].x/cents[q.cat].n,y:cents[q.cat].y/cents[q.cat].n}:null};
       const r=zs.length?placeOne(zs,q.w,q.d):null;if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
     PC=null;
