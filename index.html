@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V56</title>
+<title>攤位圖規劃台 V57</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -144,7 +144,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V56</small></h1>
+  <h1>攤位圖規劃台<small>V57</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -173,7 +173,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 <main>
   <div id="blankMsg"><div><h2>還沒有展覽</h2><p>按左上角 <b>「＋ 開新展覽」</b>，依序填檔期、看費用、上傳廠商總表，系統會自動選區並排好攤位。</p>
     <div class="row" style="justify-content:center"><button class="btn pri big" id="blankGo">＋ 開新展覽</button></div>
-    <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="blankPdf">已有攤位圖？匯入 PDF</button></div><p class="hint" style="margin-top:18px">已經有存檔？按左上「存檔1／2／3」讀取。<a href="#" id="blankSkip">或直接開空白平面圖</a></p></div></div>
+    <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="blankPdf">已有攤位圖？匯入 PDF</button></div><p class="hint" style="margin-top:18px">已經有存檔？按左上「存檔1／2／3」讀取。<a href="#" id="blankSkip">或直接開空白平面圖</a></p><p class="hint" id="blankLastP" style="margin-top:6px" hidden><a href="#" id="blankLast">回到重新整理前的畫面</a><span id="blankLastT"></span></p></div></div>
   <div id="stage"><div id="aisleBar" hidden><span>拖曳灰色主走道、黑色隔牆移動；點一下隔牆可刪除</span><button class="btn ghost" id="aoReset">走道回正對大門</button><button class="btn ghost" id="limReset">隔牆回區界</button><button class="btn ghost" id="limAdd">加上下隔牆</button><button class="btn pri" id="aoDone">完成</button></div><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
   <aside>
     <div class="tabs"><button data-tab="gen" class="on">生成器</button><button data-tab="cost">費用試算</button><button data-tab="prop">編輯工具</button><button data-tab="stat">統計</button><button data-tab="ex">廠商名單</button></div>
@@ -259,6 +259,7 @@ const defaults=()=>({
     tiers:[{cw:4,cd:4,n:2,cat:'a'},{cw:3,cd:3,n:4,cat:'a'},{cw:2,cd:2,n:12,cat:'c'}],autoCat:'c'}
 });
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));return s&&s.plans?s:null}catch(e){return null}}
+const LASTKEY=KEY+'_last';{const p=load();if(p&&(p.started||Object.values(p.plans).flat().length))try{localStorage.setItem(LASTKEY,JSON.stringify(p));localStorage.removeItem(KEY)}catch(e){}}
 let S=load(); const firstRun=!S; if(!S)S=defaults(); else{S.gen=Object.assign(defaults().gen,S.gen);S.cost=Object.assign(defaults().cost,S.cost||{});S.off=S.off||defaults().off;S.lim=S.lim||{'1F':{},'4F':{}};if(S.magnet===undefined)S.magnet=true;S.gen.isl=12;
   if(['I','J','K','L','M','N'].every(a=>S.areas[a])){S.areas.L=S.areas.M=S.areas.N=false;S.plans['4F']=[]}}
 let BG=null;try{BG=JSON.parse(localStorage.getItem(BGKEY))}catch(e){}
@@ -1583,7 +1584,9 @@ const SAMPLE=['台中精機','百智','富強鑫','德霆'];
 if(!firstRun&&S.ex.length&&S.ex.every(x=>SAMPLE.includes(x.name))){S.ex=[];Object.values(S.plans).flat().forEach(b=>{if(SAMPLE.includes(b.name)){b.name='';b.tag=`${rd(units(b))}攤`}});save()}
 if(S.started===undefined)S.started=!firstRun&&(Object.values(S.plans).flat().length>0||S.ex.length>0);
 const syncBlank=()=>{document.body.classList.toggle('blank',!S.started);if(S.started&&!syncBlank.done){syncBlank.done=1;requestAnimationFrame(()=>{fitHall()})}};syncBlank();
-$('#blankGo').onclick=()=>wizard();$('#blankSkip').onclick=e=>{e.preventDefault();S.started=true;save();syncBlank();commit()};
+$('#blankGo').onclick=()=>wizard();
+(()=>{let o=null;try{o=JSON.parse(localStorage.getItem(LASTKEY))}catch(e){}if(!o||!o.plans)return;const n=Object.values(o.plans).flat().filter(b=>b.name).length;$('#blankLastP').hidden=false;$('#blankLastT').textContent=n?`（已排 ${n} 家，沒存檔的話可以從這裡找回）`:'（沒存檔的話可以從這裡找回）';
+  $('#blankLast').onclick=e=>{e.preventDefault();const D=defaults();S=Object.assign(D,o,{gen:Object.assign(D.gen,o.gen||{}),cost:Object.assign(D.cost,o.cost||{})});S.started=true;setFloor(S.floor);sel.clear();lastGen=null;save();syncBlank();commit();toast('已回到重新整理前的畫面')}})();$('#blankSkip').onclick=e=>{e.preventDefault();S.started=true;save();syncBlank();commit()};
 renderPane();render();
 }
 </script>
