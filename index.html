@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V36</title>
+<title>攤位圖規劃台 V40</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -59,10 +59,14 @@ body.blank #wizBtn{animation:wzPulse 1.4s ease-in-out infinite;position:relative
 #plan{position:absolute;inset:0;width:100%;height:100%;touch-action:none;user-select:none}
 #plan{cursor:grab}#plan.grabbing{cursor:grabbing}#plan.edit{cursor:crosshair}#plan.fill{cursor:crosshair}#plan.aisle{cursor:move}
 .bth{cursor:pointer}#plan.edit .bth{cursor:move}
+#toolBox{padding:10px 14px 4px;border-bottom:1px solid var(--line)}#toolBox .tb{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center;margin-bottom:8px}#toolBox .h{margin:0;font-size:12px;color:var(--mute)}#toolBox .seg{flex-wrap:wrap}
+svg.wallm{cursor:crosshair}
 aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 6px}
-.tabs button{flex:1;border:0;background:none;padding:10px 2px;cursor:pointer;border-bottom:2px solid transparent;min-height:46px;color:var(--mute)}
-.tabs button.on{border-bottom-color:var(--acc);color:var(--ink);font-weight:700}
+.tabs{display:flex;gap:4px;padding:8px 8px;border-bottom:1px solid var(--line);background:#f6f7f9}
+.tabs button{flex:1;border:1px solid #d5d9e0;border-radius:8px;padding:8px 2px;cursor:pointer;min-height:40px;color:#3b4250;font-size:13px;background:#fff;border-top:4px solid var(--tc)}
+.tabs button:hover{background:#f0f4fa}
+.tabs button.on{background:var(--tc);color:#fff;font-weight:700;border-color:var(--tc)}
+.tabs [data-tab=gen]{--tc:#0b5cad}.tabs [data-tab=cost]{--tc:#c2410c}.tabs [data-tab=prop]{--tc:#15803d}.tabs [data-tab=stat]{--tc:#7c3aed}.tabs [data-tab=ex]{--tc:#0e7490}
 #pane{padding:16px;overflow:auto;flex:1}
 .sec{margin-bottom:18px}
 .sec>label.h,.h{display:block;font-size:12px;color:var(--mute);margin-bottom:6px}
@@ -139,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V36</small></h1>
+  <h1>攤位圖規劃台<small>V40</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -147,6 +151,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
     <button data-mode="select" class="on" title="左鍵拖曳＝移動畫面；Alt＋左鍵＝操作攤位">一般</button>
     <button data-mode="fill" title="框選一塊區域，自動排滿（F）">框選排滿</button>
     <button data-mode="aisle" title="直接拖曳主走道與隔牆黑線（A）">調走道</button>
+    <button data-mode="wall" title="像筆一樣畫隔板：拖曳畫一段，或一點一點連續點（W）；Esc 結束">畫隔板</button>
   </div>
   <div class="mini"><input class="num" id="szW" type="number" step="0.5" min="0.5" value="3" aria-label="寬（m）">×<input class="num" id="szD" type="number" step="0.5" min="0.5" value="3" aria-label="深（m）"><button class="btn" id="addOne" title="在畫面中央放一個這個尺寸的攤位">＋攤位</button></div>
   <div class="spacer"></div>
@@ -158,17 +163,22 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
     <button class="btn" id="magBtn" title="拖攤位靠近其他攤位時自動貼齊；拖曳時按住 Shift 可暫時不吸">磁吸</button>
     <button class="btn" id="stageBtn" title="新增舞台區，自訂尺寸">＋舞台</button><button class="btn" id="wallBtn" title="在畫面中央加一條隔板（黑線），Alt＋拖曳移動、Z 轉向、Del 刪除">＋隔板</button>
     <button class="btn" id="dashBtn" title="顯示 3m×3m 虛線格線，看每攤幾格">虛線格</button>
-    <button class="btn pri" id="impBtn" title="匯入報名 Excel：抓公司名稱、攤位數、展區">匯入名單</button>
+    <button class="btn pri" id="impBtn" title="匯入報名 Excel：抓公司名稱、攤位數、展區">匯入名單</button><button class="btn" id="pdfBtn" title="匯入現有的攤位圖 PDF（館方 iMap 輸出的 1F／4F 圖），系統換算成可編輯的攤位，再接著算錢">匯入現有攤位圖</button>
     <details class="menu"><summary class="btn">更多</summary><div class="dd"><button id="numBtn">自動編號</button><button id="expBtn">匯出／匯入</button><button id="setBtn">設定</button></div></details>
   </div>
 </header>
 <main>
   <div id="blankMsg"><div><h2>還沒有展覽</h2><p>按左上角 <b>「＋ 開新展覽」</b>，依序填檔期、看費用、上傳廠商總表，系統會自動選區並排好攤位。</p>
     <div class="row" style="justify-content:center"><button class="btn pri big" id="blankGo">＋ 開新展覽</button></div>
-    <p class="hint" style="margin-top:18px">已經有存檔？按左上「存檔1／2／3」讀取。<a href="#" id="blankSkip">或直接開空白平面圖</a></p></div></div>
+    <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="blankPdf">已有攤位圖？匯入 PDF</button></div><p class="hint" style="margin-top:18px">已經有存檔？按左上「存檔1／2／3」讀取。<a href="#" id="blankSkip">或直接開空白平面圖</a></p></div></div>
   <div id="stage"><div id="aisleBar" hidden><span>拖曳灰色主走道、黑色隔牆移動；點一下隔牆可刪除</span><button class="btn ghost" id="aoReset">走道回正對大門</button><button class="btn ghost" id="limReset">隔牆回區界</button><button class="btn ghost" id="limAdd">加上下隔牆</button><button class="btn pri" id="aoDone">完成</button></div><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
   <aside>
-    <div class="tabs"><button data-tab="gen" class="on">生成器</button><button data-tab="cost">費用試算</button><button data-tab="prop">屬性</button><button data-tab="stat">統計</button><button data-tab="ex">廠商名單</button></div>
+    <div class="tabs"><button data-tab="gen" class="on">生成器</button><button data-tab="cost">費用試算</button><button data-tab="prop">編輯工具</button><button data-tab="stat">統計</button><button data-tab="ex">廠商名單</button></div>
+    <div id="toolBox" hidden>
+      <div class="tb"><span class="h">操作模式</span><div id="tbMode"></div></div>
+      <div class="tb"><span class="h">新增</span><div id="tbAdd" class="row" style="margin:0;gap:6px;flex-wrap:wrap"></div></div>
+      <div class="tb"><span class="h">畫面</span><div id="tbView"></div></div>
+    </div>
     <div id="pane"></div>
   </aside>
 </main>
@@ -177,7 +187,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 <div id="modal"><div class="box" id="mbox"></div></div>
 <input type="file" id="fileJson" accept=".json,application/json" hidden>
 <input type="file" id="fileImg" accept="image/*" hidden>
-<input type="file" id="fileXls" accept=".xlsx,.xls,.csv" hidden>
+<input type="file" id="fileXls" accept=".xlsx,.xls,.csv" hidden><input type="file" id="filePdf" accept=".pdf" multiple hidden>
 
 <script>
 {
@@ -277,7 +287,8 @@ const unrented=()=>{const W=FL.wall,o=FL.areas.filter(a=>!S.areas[a]).map(a=>({a
   if(m.t!=null)o.push({a:'',x:W.x0,y:W.y0,w:W.x1-W.x0,d:m.t-W.y0,cut:1});if(m.b!=null)o.push({a:'',x:W.x0,y:m.b,w:W.x1-W.x0,d:W.y1-m.b,cut:1});return o};
 function wallCut(L){const W=FL.wall,ws=(L||B()).filter(b=>b.wall);if(!ws.length)return[];
   const C=1.5,nx=Math.ceil((W.x1-W.x0)/C),ny=Math.ceil((W.y1-W.y0)/C),bar=new Uint8Array(nx*ny),seen=new Uint8Array(nx*ny);
-  ws.forEach(w=>{const h=w.w>=w.d,x0=w.x-(h?1.6:0.1),x1=w.x+w.w+(h?1.6:0.1),y0=w.y-(h?0.1:1.6),y1=w.y+w.d+(h?0.1:1.6);
+  unrented().forEach(u=>{for(let i=Math.max(0,Math.floor((u.x-W.x0)/C));i<nx&&W.x0+i*C<u.x+u.w;i++)for(let j=Math.max(0,Math.floor((u.y-W.y0)/C));j<ny&&W.y0+j*C<u.y+u.d;j++)bar[j*nx+i]=2});
+  ws.forEach(w=>{const h=w.w>=w.d,x0=w.x-(h?3:0.1),x1=w.x+w.w+(h?3:0.1),y0=w.y-(h?0.1:3),y1=w.y+w.d+(h?0.1:3);
     for(let i=Math.max(0,Math.floor((x0-W.x0)/C));i<nx&&W.x0+i*C<x1;i++)for(let j=Math.max(0,Math.floor((y0-W.y0)/C));j<ny&&W.y0+j*C<y1;j++)bar[j*nx+i]=1});
   const q=[];(FL.xs||[]).forEach(y=>{const i=Math.floor((FL.cx-W.x0)/C),j=Math.floor((y-W.y0)/C);if(i>=0&&i<nx&&j>=0&&j<ny&&!bar[j*nx+i]&&!seen[j*nx+i]){seen[j*nx+i]=1;q.push(j*nx+i)}});
   if(!q.length)return[];
@@ -460,7 +471,7 @@ function buildReqs(){const g=S.gen,reqs=[],ar=autoRest();
   reqs.forEach((r,i)=>r.i=i);return reqs.sort((a,b)=>b.w*b.d-a.w*a.d||(b.name?1:0)-(a.name?1:0)||a.i-b.i)}
 const floorsOn=()=>['1F','4F'].filter(f=>FLOORS[f].areas.some(a=>S.areas[a]));
 function generate(silent){S.started=true;
-  const g=S.gen,floors=floorsOn(),LK={};['1F','4F'].forEach(f=>LK[f]=(S.plans[f]||[]).filter(b=>b.locked||b.stage));
+  const g=S.gen,floors=floorsOn(),LK={};['1F','4F'].forEach(f=>LK[f]=(S.plans[f]||[]).filter(b=>b.locked||b.stage||(g.keep&&!b.empty)));
   let reqs=buildReqs();{const names=new Set(),tags={};Object.values(LK).flat().forEach(b=>{if(b.name)names.add(b.name);else if(b.tag)tags[b.tag]=(tags[b.tag]||0)+1});
     reqs=reqs.filter(q=>{if(q.name)return !names.has(q.name);if(q.tag&&tags[q.tag]>0){tags[q.tag]--;return false}return true})}
   if(!floors.length)return toast('請至少選一個區域');
@@ -546,6 +557,16 @@ function build(o){
 }
 let lastConf=new Map();
 const setVB=()=>svg.setAttribute('viewBox',`${view.x} ${view.y} ${view.w} ${view.h}`);
+const WD={a:null,cur:null};
+function snapW(p){const W=FL.wall,g=v=>rd(Math.round(v/1.5)*1.5);let x=g(p.x),y=g(p.y);
+  [W.x0,W.x1].forEach(v=>{if(Math.abs(p.x-v)<1.5)x=v});[W.y0,W.y1].forEach(v=>{if(Math.abs(p.y-v)<1.5)y=v});
+  B().filter(b=>b.wall).forEach(b=>{const h=b.w>=b.d,ends=h?[[b.x,b.y+b.d/2],[b.x+b.w,b.y+b.d/2]]:[[b.x+b.w/2,b.y],[b.x+b.w/2,b.y+b.d]];ends.forEach(([ex,ey])=>{if(Math.hypot(p.x-ex,p.y-ey)<1.2){x=ex;y=ey}})});return{x,y}}
+function wdAxis(a,b){return Math.abs(b.x-a.x)>=Math.abs(b.y-a.y)?{x:b.x,y:a.y}:{x:a.x,y:b.y}}
+function wdPrev(){let g=$('#wdPrev');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='wdPrev';g.setAttribute('pointer-events','none');svg.appendChild(g)}
+  if(mode!=='wall'||!WD.cur){g.innerHTML='';return}const a=(drag&&drag.t==='wdraw')?drag.p0:WD.a,c=WD.cur;let h=`<circle cx="${c.x}" cy="${c.y}" r="0.5" fill="#d93025"/>`;
+  if(a){const b=wdAxis(a,c),L=rd(Math.hypot(b.x-a.x,b.y-a.y));h=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#d93025" stroke-width="0.4" stroke-dasharray="1 0.6"/><circle cx="${a.x}" cy="${a.y}" r="0.5" fill="#111"/>`+h+(L?`<text x="${(a.x+b.x)/2+0.6}" y="${(a.y+b.y)/2-0.6}" font-size="1.6" fill="#d93025" font-weight="700">${L} m</text>`:'')}g.innerHTML=h}
+function wdMake(a,c){const b=wdAxis(a,c),L=rd(Math.hypot(b.x-a.x,b.y-a.y));if(L<1.5)return null;push();const t=0.3,h=b.y===a.y;
+  const w={id:uid(),no:'',name:'隔板',cat:'n',tag:'',stage:true,wall:true,x:h?Math.min(a.x,b.x):rd(a.x-t/2),y:h?rd(a.y-t/2):Math.min(a.y,b.y),w:h?L:t,d:h?t:L};B().push(w);save();render();renderPane();return b}
 function render(){
   lastConf=check();
   const m=drag&&(drag.t==='box'||drag.t==='fill')?normRect(drag.p0,drag.p1):null;
@@ -556,9 +577,11 @@ const normRect=(a,b)=>({x:rd(Math.min(a.x,b.x)),y:rd(Math.min(a.y,b.y)),w:rd(Mat
 
 /* ===== pointer ===== */
 function world(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+svg.addEventListener('contextmenu',e=>{if(mode==='wall'){e.preventDefault();WD.a=null;wdPrev()}});
 svg.addEventListener('contextmenu',e=>e.preventDefault());
 svg.addEventListener('pointerdown',e=>{
   const p=world(e);svg.setPointerCapture(e.pointerId);$('.menu').open=false;
+  if(mode==='wall'&&!space&&!e.altKey){if(e.button===2){WD.a=null;wdPrev();return}if(e.button===0){const q=snapW(p);drag={t:'wdraw',p0:q,moved:false};WD.cur=q;wdPrev();return}}
   const g=e.target.closest('[data-id]');
   if(mode!=='aisle'&&e.button===0&&e.altKey&&!space&&!(g&&byId(g.dataset.id)&&byId(g.dataset.id).wall)){const m=LIM(),W=FL.wall,rg=ranges(),tol=Math.max(0.5,7/svg.getScreenCTM().a),inx=p.x>=W.x0-1&&p.x<=W.x1+1;
     const et=m.t!=null?m.t:(rg.length&&rg[0][0]>W.y0+1?rg[0][0]:null),eb=m.b!=null?m.b:(rg.length&&rg[rg.length-1][1]<W.y1-1?rg[rg.length-1][1]:null);
@@ -582,6 +605,7 @@ svg.addEventListener('pointerdown',e=>{
 });
 svg.addEventListener('pointermove',e=>{
   const p=world(e);$('#pos').textContent=`X ${p.x.toFixed(1)} m　Y ${p.y.toFixed(1)} m`;
+  if(mode==='wall'){WD.cur=snapW(p);if(drag&&drag.t==='wdraw'&&Math.hypot(WD.cur.x-drag.p0.x,WD.cur.y-drag.p0.y)>=1.5)drag.moved=true;wdPrev();if(drag&&drag.t==='wdraw')return}
   if(!drag)return;
   if(drag.t==='aisle'){const dx=p.x-drag.p0.x,dy=p.y-drag.p0.y;let k=drag.k;
     if(!k){if(Math.hypot(dx,dy)<0.8)return;k=drag.hits.find(h=>h[0]==='l')||(drag.hits.length>1?(Math.abs(dx)>Math.abs(dy)?'v':drag.hits.find(h=>h[0]==='h')):drag.hits[0]);drag.k=k}
@@ -604,6 +628,7 @@ svg.addEventListener('pointermove',e=>{
 });
 svg.addEventListener('pointerup',()=>{
   if(!drag)return;const d=drag;drag=null;
+  if(d.t==='wdraw'){const q=WD.cur||d.p0;if(d.moved){wdMake(d.p0,q);WD.a=null}else if(WD.a){if(Math.hypot(q.x-WD.a.x,q.y-WD.a.y)<0.5)WD.a=null;else{const b=wdMake(WD.a,q);WD.a=b||WD.a}}else WD.a=q;wdPrev();return}
   if(d.t==='aisle'){if(d.moved){hist.push(d.before);fut=[];commit();toast(d.k&&d.k[0]==='l'?'隔牆已移動，按「產生建議排法」依新範圍重排':'走道已移動，按「產生建議排法」依新走道重排')}else{const h=d.k||d.hits[0];if(h==='lt'||h==='lb')limMenu(h[1])}return}svg.classList.remove('grabbing');
   if(d.t==='pan'){if(d.dist<4&&d.btn===0){const now=Date.now();if(d.click&&LC.id===d.click&&now-LC.t<450){LC={id:'',t:0};sel=new Set([d.click]);render();renderPane();const bb=byId(d.click);bb&&bb.wall?wallEdit(bb):editBooth(bb);return}if(!d.click){const hk=limNear(d.wp);if(hk&&LC.lim===hk&&now-LC.t<450){LC={id:'',t:0};limMenu(hk[1]);return}LC={id:'',t:now,lim:hk}}else LC={id:d.click,t:now};if(d.click){if(d.shift){sel.has(d.click)?sel.delete(d.click):sel.add(d.click)}else sel=new Set([d.click]);if(tab==='gen'){tab='prop';syncTabs()}}else if(!d.shift)sel.clear();render();renderPane()}return}
   if(d.t==='move'&&d.moved){hist.push(d.before);fut=[]}
@@ -688,7 +713,7 @@ function focusBooth(b){sel=new Set([b.id]);const w=Math.max(30,b.w*4);view={x:b.
 function switchFloor(f){if(f===S.floor)return;sel.clear();setFloor(f);save();render();renderPane()}
 
 /* ===== side panel ===== */
-function syncTabs(){$$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab))}
+function syncTabs(){$$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));$('#toolBox').hidden=tab!=='prop'}
 $$('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;syncTabs();renderPane()});
 const catOpts=v=>S.cats.map(c=>`<option value="${esc(c.id)}"${c.id===v?' selected':''}>${esc(c.name)}</option>`).join('');
 function parseSize(s){s=String(s||'').trim();const m=s.match(/^(\d+(?:\.\d+)?)\s*[x×*＊]\s*(\d+(?:\.\d+)?)$/i);if(m)return[+m[1],+m[2]];const u=parseFloat(s);return u>0?shapeOf(u):null}
@@ -715,7 +740,14 @@ function calDays(c){if(!c.start)return null;const d0=new Date(c.start+'T00:00:00
   for(let i=0;i<n;i++){const d=new Date(d0);d.setDate(d0.getDate()+i-c.inD);const type=i<c.inD?'in':i<c.inD+c.showD?'show':'out',wd=d.getDay(),hk=(c.hol||{})[i];
     out.push({i,d,type,wd,holi:type==='show'&&(hk!==undefined?hk:(wd===0||wd===6)),ot:(c.otd||{})[i]||0,hr:type==='out'?((c.outH||{})[i]||0):0,io2:type==='show'?((c.iod||{})[i]!==undefined?+(c.iod||{})[i]:(c.night&&i===c.inD+c.showD-1?+c.nightH||0:0)):0})}return out}
 /* 依館方「展覽場地租用結算單」：每區 小計 → 訂金 20% ＋ 尾款 80%×(應使用攤位數／該區攤位數) → 5% VAT（各自四捨五入到元） */
-function usedAuto(a){const f=fOf(a),L=(S.plans[f]||[]).filter(b=>!b.stage&&!b.wall&&areaIn(f,b)===a);if(!L.length)return OFFICIAL[a];return Math.min(OFFICIAL[a],Math.round(L.reduce((t,b)=>t+units(b),0)))}
+/* 應使用攤位數＝該區攤位數 ×（隔板／隔牆圍出來可用的面積 ÷ 該區面積）；館方是照圍起來的範圍算，不是照圖上攤位數 */
+const USED_MEMO={};
+function usedAuto(a){const f=fOf(a),key=f+JSON.stringify([S.areas,(S.lim||{})[f],(S.off||{})[f],(S.plans[f]||[]).filter(b=>b.wall).map(b=>[b.x,b.y,b.w,b.d])]);
+  let m=USED_MEMO[key];if(!m){const sf=S.floor,keep=view&&{...view};setFloor(f,true);const W=FL.wall,cuts=unrented().filter(u=>u.cut).concat(wallCut());m={};
+    FLOORS[f].areas.forEach(x=>{const[y0,y1]=FL.areaY[x],Y0=Math.max(y0,W.y0),Y1=Math.min(y1,W.y1),band=(W.x1-W.x0)*(Y1-Y0);
+      const cut=cuts.reduce((t,r)=>t+Math.max(0,Math.min(r.x+r.w,W.x1)-Math.max(r.x,W.x0))*Math.max(0,Math.min(r.y+r.d,Y1)-Math.max(r.y,Y0)),0);m[x]=band>0?Math.max(0,1-cut/band):1});
+    setFloor(sf,true);if(keep)view=keep;USED_MEMO[key]=m}
+  return Math.min(OFFICIAL[a],Math.round(OFFICIAL[a]*m[a]))}
 function costOf(A,c){c=c||S.cost;const cd=calDays(c),ngM=c.outD>0?1:1.2,lastI=c.inD+c.showD-1,nH=cd?cd.reduce((t,x)=>t+x.io2,0):0;
   const holiD=cd?cd.filter(x=>x.holi).length:c.holiD,anyOt=cd&&cd.some(x=>x.ot),otH=anyOt?cd.filter(x=>x.type==='show').reduce((t,x)=>t+x.ot,0):c.otH,ioH=anyOt?cd.filter(x=>x.type!=='show').reduce((t,x)=>t+x.ot,0):c.ioH;
   const rows=A.map(a=>{const f=FEE[a],pa=(c.pa||{})[a]||{},inX=+pa.inX||0,hu=Math.round(f[0]/9);let io=f[0]*(c.inD+inX),hr=0,hrH=0,outFull=0;
@@ -782,6 +814,7 @@ function genPane(P){
     <div class="note" style="margin-top:10px">已選 ${selA.length?cfgName(selA):'—'}：約 <b>${capSel}</b> 格${need?`；需求 ${rd(need)} 攤，使用率 <b style="color:${need>capSel?'var(--bad)':'inherit'}">${capSel?Math.round(need/capSel*100):0}%</b>${need>capSel?'，不夠放':''}`:''}${cs?`<br>總場地費（含稅）約 <b>${$$n(B().length?cs.rent+cs.tax:estFee(selA,need))}</b>＋清潔 ${$$n(cs.clean)}（${S.cost.inD+S.cost.outD} 天進出場＋${S.cost.showD} 天展出）<a href="#" id="goCost" style="margin-left:6px">看明細</a>`:''}</div>
     ${warn.length?`<div class="note bad">${warn.map(esc).join('<br>')}</div>`:''}
     <label class="chk"><input type="checkbox" id="g_strip"${g.strips?' checked':''}>含牆邊排（南北牆的單排攤位）</label></div>
+<div class="sec" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px"><label class="chk" style="margin:0"><input type="checkbox" id="g_keep"${g.keep?' checked':''}><b>保留我已排的攤位，只排剩下的</b></label><p class="hint" style="margin:4px 0 0">先自己排好一部分（例如 70%），勾這個再按「產生建議排法」：已經在圖上的攤位不動，名單上還沒排到的公司才由系統補進空位。用隔板封起來的地方不會排。</p></div>
 ${useEx?`<div class="sec"><span class="h">③ 名單</span>
     <div class="note ok">已匯入 <b>${exs.length}</b> 家・<b>${rd(exs.reduce((a,x)=>a+x.cw*x.cd,0))}</b> 攤，會掛公司名排進去<a href="#" id="goEx" style="margin-left:6px">看名單</a></div>
     <details class="rules"${g.tiers.some(t=>t.n>0)?' open':''}><summary>另外加未定名的大攤（選填）</summary>
@@ -815,6 +848,7 @@ ${useEx?`<div class="sec"><span class="h">③ 名單</span>
     <details class="rules"><summary>排法規則</summary><ol><li>大攤先放，同大小依名單順序</li><li>黃金地段：十字路口四個轉角＋正門口（西側參觀入口）兩側，一定先給大攤</li><li>每種風格的差別在大攤怎麼分配到這些黃金位置</li><li>再來是沿 6.1m 主走道的位置</li><li>最後是東側貨品入口、內側與牆邊排</li><li>每一攤都至少有一面靠走道；島和島之間留小走道可以穿過</li></ol><p>這是建議模板：產生後可自由拖拉、合併（可吃掉走道）、分割，按「↶ 上一步」回上一版。</p></details>`;
   const num=(id,k)=>{$(id).oninput=e=>{g[k]=e.target.value===''?'':Math.max(0,+e.target.value);save()};$(id).onchange=()=>setTimeout(()=>{if(!document.activeElement||!['g_total','g_totalU'].includes(document.activeElement.id))renderPane()},0)};
   num('#g_total','total');num('#g_totalU','totalU');$('#g_sug')&&($('#g_sug').onclick=()=>{g.total=$('#g_total').value===''?'':+$('#g_total').value;g.totalU=$('#g_totalU').value===''?'':+$('#g_totalU').value;suggest()});
+  $('#g_keep')&&($('#g_keep').onchange=e=>{S.gen.keep=e.target.checked;save()});
   $$('[data-area]').forEach(c=>c.onchange=()=>{push();S.areas[c.dataset.area]=c.checked;S.lim[c.dataset.f]={};commit()});
   $$('[data-isoa]').forEach(g=>g.onclick=()=>{const a=g.dataset.isoa;push();S.areas[a]=!S.areas[a];S.lim[fOf(a)]={};commit()});
   $('#g_rec').onclick=()=>{g.totalU=$('#g_totalU').value===''?'':+$('#g_totalU').value;save();renderPane()};
@@ -839,7 +873,8 @@ function costPane(P){
   const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),need=+S.gen.totalU||B().filter(b=>!b.empty).reduce((t,b)=>t+units(b),0);
   const inp=(k,l,max)=>`<label class="h" style="margin:0">${l}<input class="num" style="display:block;width:100%;margin-top:4px" type="number" min="0" max="${max||60}" data-c="${k}" value="${c[k]}"></label>`;
   const cd=calDays(c);
-  let h=`<div class="sec"><span class="h">檔期</span><div class="row" style="margin:0 0 8px"><label class="h" style="margin:0">展出第一天<input type="date" min="2000-01-01" max="2099-12-31" data-c="start" value="${esc(c.start||'')}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label><button class="btn pri" id="calBtn" style="align-self:flex-end">開啟週曆試算表</button><button class="btn" id="stBtn" style="align-self:flex-end">結算單（粗估）</button></div>${cd?`<p class="hint">已用週曆：假日 ${cd.filter(x=>x.holi).length} 天（自動抓六日），逐日加班在週曆裡填。</p>`:''}<span class="h">天數</span><div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">${inp('inD','進場天')}${inp('outD','撤場天')}${inp('showD','展出天')}${cd?'':inp('holiD','其中假日展出天')+inp('otH','展出延長（小時）',200)+inp('ioH','進出場加班（小時）',200)}</div>
+  const manual=A.filter(a=>((c.pa||{})[a]||{}).used!==undefined&&((c.pa||{})[a]||{}).used!=='');
+  let h=`<div class="row" style="justify-content:flex-end;margin:0 0 4px"><button class="btn pri" id="reEst" title="依目前平面圖上的攤位重新數各區使用攤位數、重算費用">↻ 依平面圖重新估價</button></div>${manual.length?`<p class="hint" style="margin:0 0 6px;text-align:right">${manual.join('、')} 區的使用攤位數是手動填的；重新估價會改回依平面圖計算</p>`:''}<div class="sec"><span class="h">檔期</span><div class="row" style="margin:0 0 8px"><label class="h" style="margin:0">展出第一天<input type="date" min="2000-01-01" max="2099-12-31" data-c="start" value="${esc(c.start||'')}" style="display:block;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)"></label><button class="btn pri" id="calBtn" style="align-self:flex-end">開啟週曆試算表</button><button class="btn" id="stBtn" style="align-self:flex-end">結算單（粗估）</button></div>${cd?`<p class="hint">已用週曆：假日 ${cd.filter(x=>x.holi).length} 天（自動抓六日），逐日加班在週曆裡填。</p>`:''}<span class="h">天數</span><div class="g4" style="grid-template-columns:repeat(3,minmax(0,1fr))">${inp('inD','進場天')}${inp('outD','撤場天')}${inp('showD','展出天')}${cd?'':inp('holiD','其中假日展出天')+inp('otH','展出延長（小時）',200)+inp('ioH','進出場加班（小時）',200)}</div>
     <label class="chk"><input type="checkbox" data-c="night"${c.night?' checked':''}>連夜退場（清潔費加 1 日；展後出場時數在週曆最後一個展出日填）</label></div>`;
   if(!A.length){P.innerHTML=h+`<p class="hint">請先在生成器選區。</p>`;bindCost();return}
   const r=costOf(A);
@@ -862,7 +897,7 @@ function costPane(P){
     <p class="hint">依「外貿協會台北南港展覽館 1 館展覽場地租用收費基準」2024.01 修訂版試算。假日展出加收當日場地費 5%；清潔費併保證金結算。雙層／超高依攤位勾選自動計入，冷氣、護理師、保全在週曆試算表填寫；實際以合約為準。</p></div>`;
   P.innerHTML=h;bindCost();
 }
-function bindCost(){$$('[data-c]').forEach(i=>i.onchange=()=>{const k=i.dataset.c;S.cost[k]=i.type==='checkbox'?i.checked:i.type==='date'?i.value:Math.max(0,+i.value||0);if(k==='inD'||k==='showD'||k==='outD'||k==='start'){S.cost.otd={};S.cost.hol={}}save();renderPane()});
+function bindCost(){$('#reEst')&&($('#reEst').onclick=()=>{const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),b0=costOf(A);push();const pa={...(S.cost.pa||{})};A.forEach(a=>{if(pa[a]){pa[a]={...pa[a]};delete pa[a].used}});S.cost.pa=pa;save();renderPane();const b1=costOf(A),d=(b1.rent+b1.tax)-(b0.rent+b0.tax);toast(`已依平面圖重新估價：總場地費 ${$$n(b1.rent+b1.tax)}${d?`（${d>0?'+':''}${Math.round(d).toLocaleString()}）`:'（沒變）'}`)});$$('[data-c]').forEach(i=>i.onchange=()=>{const k=i.dataset.c;S.cost[k]=i.type==='checkbox'?i.checked:i.type==='date'?i.value:Math.max(0,+i.value||0);if(k==='inD'||k==='showD'||k==='outD'||k==='start'){S.cost.otd={};S.cost.hol={}}save();renderPane()});
   $('#calBtn')&&($('#calBtn').onclick=()=>costCal());$('#stBtn')&&($('#stBtn').onclick=()=>settleSheet())}
 /* 週曆試算表：星期一～日橫排；進場／撤場加在展期頭尾；逐日選加班時數 */
 function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7)+60);c.start=d.toISOString().slice(0,10)}
@@ -894,12 +929,12 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
     ${cd.some(x=>x.hr||x.io2)?`<h3>撤場計費</h3><ul class="list">${cd.filter(x=>x.hr).map(x=>`<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} 出場按時計（${r.rows.map(o=>`${o.a} ${o.hrH}h×${o.hu.toLocaleString()}`).join('、')}）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.hr,0))}</span></li>`).join('')}${cd.filter(x=>x.io2).map(x=>{const m=x===lastShow&&c.outD===0?1.2:1;return `<li style="cursor:default"><span>${x.d.getMonth()+1}/${x.d.getDate()} ${x===lastShow?'展後出場超時':'晚間進出場'} ${x.io2} 小時（進出場超時費${m>1?' ×1.2，翌日沒租':''}）× ${A.length} 區</span><span>${$$n(A.reduce((t,a)=>t+Math.round(FEE[a][2]*m),0)*x.io2)}</span></li>`}).join('')}</ul>`:''}
     <h3>各區結算（照館方結算單算法）<button class="btn" id="cl_st" style="float:right;font-size:12px">看結算單格式</button></h3>
     <div class="scroll"><table class="tier" style="font-size:13px;min-width:720px"><tr><th>區</th><th style="text-align:right">該區攤位數</th><th style="text-align:right">應使用攤位數</th><th style="text-align:right">提早進場</th><th style="text-align:right">按時出場</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">訂金 20%</th><th style="text-align:right;color:#6b7280">尾款 80%×比例<br><small>粗估</small></th><th style="text-align:right;color:#6b7280">5% VAT<br><small>粗估</small></th><th style="text-align:right;color:#6b7280">總場地費（含稅）<br><small>粗估</small></th></tr>
-    ${r.rows.map(o=>`<tr><td class="u">${o.a}</td><td style="text-align:right">${o.off}</td><td style="text-align:right"><input class="num" style="width:64px" type="number" min="0" max="${o.off}" data-pa="${o.a}:used" value="${o.auto?'':o.used}" placeholder="${o.used}" title="空白＝依平面圖上這區的攤位數（含空攤）自動算"></td>
+    ${r.rows.map(o=>`<tr><td class="u">${o.a}</td><td style="text-align:right">${o.off}</td><td style="text-align:right"><input class="num" style="width:64px" type="number" min="0" max="${o.off}" data-pa="${o.a}:used" value="${o.auto?'':o.used}" placeholder="${o.used}" title="空白＝依隔板／隔牆圍出來的可用面積換算（館方算法），也可以手動填"></td>
       <td style="text-align:right"><input class="num" style="width:48px" type="number" min="0" data-pa="${o.a}:inX" value="${o.inX||''}" placeholder="0" title="這區比其他區多幾天進場"> 天</td>
       <td style="text-align:right">${cd.some(x=>x.hr)?`<input class="num" style="width:48px" type="number" min="4" max="9" data-pa="${o.a}:hr" value="${((c.pa||{})[o.a]||{}).hr||''}" placeholder="${o.hrH||4}" title="這區按時出場的時數（空白＝依週曆）"> h`:'—'}</td>
       <td style="text-align:right">${$$n(o.sub)}</td><td style="text-align:right">${$$n(o.dep)}</td><td style="text-align:right">${$$n(o.tail)}<br><small style="color:var(--mute)">${o.used}/${o.off}</small></td><td style="text-align:right">${$$n(o.vat)}</td><td style="text-align:right"><b>${$$n(o.tot)}</b></td></tr>`).join('')}
     <tr><td colspan="5"><b>總場地費合計</b></td><td style="text-align:right">${$$n(r.gross)}</td><td></td><td></td><td style="text-align:right">${$$n(r.tax)}</td><td style="text-align:right"><b>${$$n(r.rent+r.tax)}</b></td></tr></table></div>
-    <p class="hint">尾款只收「應使用攤位數 ÷ 該區攤位數」的比例，所以一區沒用滿時場地費會打折；應使用攤位數空白時，依平面圖這區的攤位數（含空攤）自動帶入。</p>
+    <p class="hint">尾款只收「應使用攤位數 ÷ 該區攤位數」的比例。應使用攤位數空白時，依隔板／隔牆圍出來的可用面積換算（例：隔掉一區 15% 的空間 → 450 × 85% ＝ 383），移動隔板就會跟著變。</p>
     <h3>合計</h3><ul class="list"><li style="cursor:default;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li><li style="cursor:default"><span>場地費（未稅，訂金＋尾款）</span><span>${$$n(r.rent)}</span></li><li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
     <li style="cursor:default"><span>清潔費（${A.length} 區 × ${r.days} 天，含稅）</span><span>${$$n(r.clean)}</span></li><li style="cursor:default"><span>場地＋清潔（含稅）</span><span>${$$n(r.base)}</span></li></ul>
     ${(()=>{const R=r.rent+r.tax,d0=cd[0].d,ds=n=>{const d=new Date(d0);d.setDate(d.getDate()-n);return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} 前`};
@@ -954,7 +989,7 @@ function renderPane(){
   if(tab==='cost')return costPane(P);
   if(tab==='prop'){
     const bs=[...sel].map(byId).filter(Boolean);
-    if(!bs.length){P.innerHTML=`<div class="note"><b>按住 Alt 可移動廠商位置</b></div><p class="hint">單擊看屬性・雙擊編輯・Z 轉向・L 鎖定・Del 刪除<br>Alt＋拖空白處框選，Alt＋Shift 加選<br>Alt＋拖黑色隔牆可移動，Alt＋點一下可刪除</p>`;return}
+    if(!bs.length){P.innerHTML=`<div class="note"><b>按住 Alt 可移動廠商位置</b></div><p class="hint">單擊看屬性・雙擊編輯・Z 轉向・L 鎖定・Del 刪除<br>Alt＋拖空白處框選，Alt＋Shift 加選<br>Alt＋拖黑色隔牆可移動，雙擊黑線可回原位或拿掉<br>「畫隔板」模式：拖曳畫一段，或連續點點畫折線，Esc 結束</p>`;return}
     if(bs.length===1&&bs[0].wall){const b=bs[0],cf=lastConf.get(b.id);P.innerHTML=`<div class="note"><b>隔板</b>・長 ${Math.max(b.w,b.d)} m（${b.w>=b.d?'橫':'直'}）</div>${cf?`<div class="note bad">${cf.map(esc).join('<br>')}<br>重新產生時，生成器會避開隔板。</div>`:''}<p class="hint">按住 Alt 拖曳移動・Z 轉直／橫・Del 刪除・雙擊改長度</p><div class="row"><button class="btn" id="wp_e">改長度</button><button class="btn" id="wp_r">轉直／橫 (Z)</button><button class="btn ghost warn" id="wp_d">刪除</button></div>`;
       $('#wp_e').onclick=()=>wallEdit(b);$('#wp_r').onclick=rotate;$('#wp_d').onclick=del;return}
     if(bs.length===1){const b=bs[0],cf=lastConf.get(b.id),pc=pillarsIn(b);
@@ -1082,10 +1117,12 @@ function exportDialog(){
 $('#fileJson').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.plans)throw 0;push();const D=defaults();S=Object.assign(D,d,{gen:Object.assign(D.gen,d.gen||{})});setFloor(S.floor);sel.clear();closeM();commit();toast('已匯入')}catch(x){toast('檔案格式不正確（需為 V3 專案檔）')}});e.target.value=''};
 
 /* ===== toolbar & keys ===== */
-function setMode(m){mode=m;$('#aisleBar').hidden=m!=='aisle';$$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));svg.classList.toggle('fill',m==='fill');svg.classList.toggle('aisle',m==='aisle');if(m==='aisle')toast('拖曳灰色主走道或黑色隔牆線來移動；完成後按「產生建議排法」');render();renderPane();if(m==='fill')toast('拉出一塊範圍，放開就用工具列的尺寸排滿')}
+function setMode(m){mode=m;if(m!=='wall'){WD.a=null;wdPrev()}svg.classList.toggle('wallm',m==='wall');if(m!=='select'&&tab!=='prop'){tab='prop';syncTabs()}if(m==='wall')toast('畫隔板：按住拖曳畫一段，或一點一點連續點；Esc 或再點一次同一點結束');$('#aisleBar').hidden=m!=='aisle';$$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));svg.classList.toggle('fill',m==='fill');svg.classList.toggle('aisle',m==='aisle');if(m==='aisle')toast('拖曳灰色主走道或黑色隔牆線來移動；完成後按「產生建議排法」');render();renderPane();if(m==='fill')toast('拉出一塊範圍，放開就用工具列的尺寸排滿')}
 $$('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 $$('[data-floor]').forEach(b=>b.onclick=()=>switchFloor(b.dataset.floor));
 $('#addOne').onclick=addOne;
+(()=>{const m=document.querySelector('[aria-label="模式"]'),sz=$('#szW').closest('.mini'),z=document.querySelector('[aria-label="縮放"]');
+  $('#tbMode').append(m);$('#tbAdd').append(sz,$('#stageBtn'),$('#wallBtn'));$('#tbView').append(z);sz.style.margin='0'})();
   $('#limReset').onclick=()=>{push();S.lim[S.floor]={};commit()};
   $('#limAdd').onclick=()=>{const rg=ranges();if(!rg.length)return toast('先選區');push();S.lim[S.floor]={t:rd(rg[0][0]+3),b:rd(rg[rg.length-1][1]-3)};commit();toast('已加上下兩條隔牆黑線，直接拖曳調整')};
   $('#aoReset').onclick=()=>{push();S.off[S.floor]={v:0,h:[0,0,0]};setFloor(S.floor,true);commit()};
@@ -1174,6 +1211,80 @@ function autoFill(U,N,FA){
   setFloor(fOf(A[0]));fit();
 
   const e=lastGen?lastGen.e:0;toast(`已匯入 ${N} 家、${U} 攤，自動選 ${cfgName(A)} 並排好${lastGen&&lastGen.fail.length?`（${lastGen.fail.length} 家放不下）`:''}；空攤 ${e} 個`)}
+/* 讀館方攤位圖 PDF：抓有底色的方塊＋裡面的字，換算成公尺，對齊這套工具的主走道 */
+async function pdfPlanRead(lib,data){
+  const pdf=await lib.getDocument({data}).promise,page=await pdf.getPage(1),vp=page.getViewport({scale:1}),O=lib.OPS;
+  const ol=await page.getOperatorList(),tc=await page.getTextContent();
+  const mul=(m,n)=>[m[0]*n[0]+m[2]*n[1],m[1]*n[0]+m[3]*n[1],m[0]*n[2]+m[2]*n[3],m[1]*n[2]+m[3]*n[3],m[0]*n[4]+m[2]*n[5]+m[4],m[1]*n[4]+m[3]*n[5]+m[5]];
+  const V=vp.transform;let ctm=[1,0,0,1,0,0],fill=[0,0,0],st=[],pb=null;const objs=[];
+  const hex=a=>typeof a==='string'?[parseInt(a.slice(1,3),16)/255,parseInt(a.slice(3,5),16)/255,parseInt(a.slice(5,7),16)/255]:null;
+  const pt=(x,y)=>{const m=mul(V,ctm);return[m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]]};
+  for(let i=0;i<ol.fnArray.length;i++){const fn=ol.fnArray[i],a=ol.argsArray[i];
+    if(fn===O.save)st.push([ctm,fill]);else if(fn===O.restore){const t=st.pop();if(t){ctm=t[0];fill=t[1]}}
+    else if(fn===O.transform)ctm=mul(ctm,a);
+    else if(fn===O.setFillRGBColor){fill=hex(a[0])||(a.length>=3?[a[0]/255,a[1]/255,a[2]/255]:fill)}
+    else if(fn===O.constructPath){const ops=a[0],co=a[1];let k=0,xs=[],ys=[];
+      for(const op of ops){if(op===O.rectangle){const[x,y,w,h]=co.slice(k,k+4);k+=4;[[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([p,q])=>{const r=pt(p,q);xs.push(r[0]);ys.push(r[1])})}
+        else if(op===O.moveTo||op===O.lineTo){const r=pt(co[k],co[k+1]);k+=2;xs.push(r[0]);ys.push(r[1])}
+        else if(op===O.curveTo){for(let j=0;j<3;j++){const r=pt(co[k],co[k+1]);k+=2;xs.push(r[0]);ys.push(r[1])}}
+        else if(op===O.curveTo2||op===O.curveTo3){for(let j=0;j<2;j++){const r=pt(co[k],co[k+1]);k+=2;xs.push(r[0]);ys.push(r[1])}}}
+      if(xs.length)pb={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys)}}
+    else if(fn===O.fill||fn===O.eoFill||fn===O.fillStroke||fn===O.eoFillStroke||fn===O.closeFillStroke||fn===O.closeEOFillStroke){if(pb)objs.push({...pb,col:fill.map(v=>Math.round(v*100)/100)});pb=null}
+    else if(fn===O.endPath||fn===O.stroke||fn===O.closeStroke)pb=null}
+  const chars=[];tc.items.forEach(it=>{if(!it.str||!it.str.trim())return;const m=lib.Util.transform(V,it.transform),fs=Math.hypot(m[2],m[3])||it.height||1,n=[...it.str].length,vert=Math.abs(m[1])>Math.abs(m[0])*0.5&&false;
+    const w=it.width||fs*n;[...it.str].forEach((ch,j)=>{if(!ch.trim())return;const x=m[4]+w*(j+0.5)/n,y=m[5]-fs*0.4;chars.push({t:ch,x,y,s:Math.round(fs*10)/10,x0:m[4]+w*j/n})})});
+  return{objs,chars,W:vp.width,H:vp.height}}
+function pdfPlanBooths(raw){const{objs,chars}=raw,grey=c=>Math.abs(c[0]-c[1])<0.03&&Math.abs(c[1]-c[2])<0.03,A=b=>(b.x1-b.x0)*(b.y1-b.y0);
+  const ded=[];objs.filter(o=>o.x1-o.x0>=3&&o.y1-o.y0>=3).sort((a,b)=>A(a)-A(b)).forEach(b=>{if(!ded.some(d=>Math.abs(b.x0-d.x0)<0.6&&Math.abs(b.y0-d.y0)<0.6&&Math.abs(b.x1-d.x1)<0.6&&Math.abs(b.y1-d.y1)<0.6))ded.push({...b,cs:[]})});
+  chars.forEach(c=>{let best=null;for(const b of ded)if(c.x>=b.x0-0.2&&c.x<=b.x1+0.2&&c.y>=b.y0-0.2&&c.y<=b.y1+0.2&&(!best||A(b)<A(best)))best=b;if(best)best.cs.push(c)});
+  const out=[];ded.forEach(b=>{const cs=b.cs,col=b.col,isW=grey(col)&&col[0]>0.95;let no='',name='';
+    if(cs.length){const NR=/[IJKLMN]\d{4}[a-z]?/,r1=cs.slice().sort((a,c)=>Math.round(a.y)-Math.round(c.y)||a.x-c.x).map(c=>c.t).join(''),r2=cs.slice().sort((a,c)=>a.x-c.x||a.y-c.y).map(c=>c.t).join(''),m=r1.match(NR)||r2.match(NR);if(m)no=m[0];
+      const fs=Math.max(1,...cs.map(c=>c.s)),xs=cs.map(c=>c.x),ys=cs.map(c=>c.y),mx=Math.max(...cs.map(c=>c.s));const big=cs.filter(c=>c.s>=mx-0.3);
+      const bx=big.map(c=>c.x),by=big.map(c=>c.y);
+      if(big.length>1&&Math.max(...bx)-Math.min(...bx)<(Math.max(...by)-Math.min(...by))*0.6){const g={};big.forEach(c=>{const k=Math.round(c.x/fs);(g[k]=g[k]||[]).push(c)});name=Object.keys(g).sort((a,c)=>a-c).map(k=>g[k].sort((a,c)=>a.y-c.y).map(c=>c.t).join('')).join('')}
+      else name=big.sort((a,c)=>Math.round(a.y/fs)-Math.round(c.y/fs)||a.x-c.x).map(c=>c.t).join('');
+      if(no)name=name.replace(no,'').replace(/[IJKLMN]\d{3,4}[a-z]?/g,'');name=name.replace(/^[↓↑←→\s]+|[↓↑←→\s]+$/g,'')}
+    const kind=grey(col)?(isW&&no?'empty':(!isW&&!no&&/[\u4e00-\u9fff]{2}|[A-Za-z]{3}/.test(name)&&!/^[IJKLMN]?\d/.test(name)?'stage':'')):'booth';if(!kind)return;
+    out.push({x0:b.x0,x1:b.x1,y0:b.y0,y1:b.y1,col,no,name:name.trim(),kind,cs})});
+  const leg={};out.forEach(b=>{if(b.no||b.kind!=='booth')return;const w=b.x1-b.x0,h=b.y1-b.y0;if(w<7&&h<7&&Math.abs(w-h)<1.5){const t=chars.filter(c=>c.x0>b.x1&&c.x0<b.x1+120&&Math.abs(c.y-(b.y0+b.y1)/2)<2.5).sort((a,c)=>a.x0-c.x0).map(c=>c.t).join('');const k=b.col.join(',');if(t&&!t.startsWith('←')&&!leg[k])leg[k]=t}});
+  return{list:out.filter(b=>b.no||b.name),leg}}
+function pdfPlanPlace(bs,FLc){const ok=bs.filter(b=>b.kind!=='stage'),dims={};ok.forEach(b=>{const d=Math.round(Math.min(b.x1-b.x0,b.y1-b.y0)*10)/10;dims[d]=(dims[d]||0)+1});
+  const unit=Math.min(...Object.keys(dims).filter(d=>dims[d]>=5&&+d>=6).map(Number)),s=unit/3;
+  const gaps=(iv,lo,hi)=>{iv.sort((a,b)=>a[0]-b[0]);const g=[];let cur=lo;iv.forEach(([a,b])=>{if(a>cur)g.push([cur,a]);cur=Math.max(cur,b)});if(hi>cur)g.push([cur,hi]);return g};
+  const X0=Math.min(...ok.map(b=>b.x0)),X1=Math.max(...ok.map(b=>b.x1)),Y0=Math.min(...ok.map(b=>b.y0)),Y1=Math.max(...ok.map(b=>b.y1));
+  const vg=gaps(ok.map(b=>[b.x0,b.x1]),X0,X1).filter(g=>Math.abs((g[1]-g[0])/s-6.1)<1.6),mid=(X0+X1)/2,gx=vg.sort((a,b)=>Math.abs((a[0]+a[1])/2-mid)-Math.abs((b[0]+b[1])/2-mid))[0];
+  const hg=gaps(ok.map(b=>[b.y0,b.y1]),Y0,Y1).filter(g=>Math.abs((g[1]-g[0])/s-6.1)<1.6).map(g=>(g[0]+g[1])/2);
+  const TA=FLc.aisleY.map(a=>(a[0]+a[1])/2),cx=(FLc.colX[1]+FLc.colR[0])/2;let best=null;
+  hg.forEach(gy=>TA.forEach(ty=>{const oy=ty-gy/s,err=hg.reduce((t,h)=>t+Math.min(...TA.map(a=>Math.abs(h/s+oy-a))),0);if(!best||err<best[0])best=[err,oy]}));
+  if(!gx||!best)return null;const ox=cx-(gx[0]+gx[1])/2/s,oy=best[1],h2=v=>Math.round(v*2)/2;
+  return bs.map(b=>({...b,x:h2(b.x0/s+ox),y:h2(b.y0/s+oy),w:h2((b.x1-b.x0)/s),d:h2((b.y1-b.y0)/s)})).filter(b=>b.w>=1.4&&b.d>=1.4&&(b.kind!=='stage'||(b.w>=4&&b.d>=4)))}
+
+function loadPDFJS(){return window.pdfjsLib?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';sc.onload=()=>{try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}catch(e){}ok()};sc.onerror=()=>no(new Error('load'));document.head.appendChild(sc)})}
+const toHex=c=>'#'+c.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+async function importPlanPdf(files){if(!files.length)return;toast('讀取攤位圖中…');
+  try{await loadPDFJS()}catch(e){return toast('PDF 讀取元件載入失敗，請確認網路')}
+  const rep=[];push();
+  for(const f of files){let raw;try{raw=await pdfPlanRead(pdfjsLib,new Uint8Array(await f.arrayBuffer()))}catch(e){rep.push({f:f.name,err:'讀不到這個 PDF'});continue}
+    const{list,leg}=pdfPlanBooths(raw),letters={};list.forEach(b=>{if(b.no)letters[b.no[0]]=(letters[b.no[0]]||0)+1});
+    const L=Object.keys(letters);if(!L.length){rep.push({f:f.name,err:'找不到攤位編號（I～N 開頭）'});continue}
+    const F=L.filter(a=>'IJK'.includes(a)).reduce((t,a)=>t+letters[a],0)>=L.filter(a=>'LMN'.includes(a)).reduce((t,a)=>t+letters[a],0)?'1F':'4F';
+    const FC=derive(FLOORS[F],{v:0,h:[0,0,0]}),placed=pdfPlanPlace(list,FC);if(!placed){rep.push({f:f.name,err:'對不到主走道，無法換算位置'});continue}
+    const catOf=col=>{const k=col.join(','),nm=leg[k],hx=toHex(col);let c=nm&&S.cats.find(c=>c.name===nm||c.name.includes(nm)||nm.includes(c.name));if(!c)c=S.cats.find(c=>c.color.toUpperCase()===hx);
+      if(!c){c={id:'p'+Math.random().toString(36).slice(2,6),name:nm||('類別 '+hx),color:hx};S.cats.splice(Math.max(0,S.cats.length-1),0,c)}else if(nm&&c.color.toUpperCase()!==hx)c.color=hx;return c.id};
+    const out=placed.map(b=>b.kind==='stage'?{id:uid(),no:'',name:b.name,cat:'n',tag:'',stage:true,locked:true,x:b.x,y:b.y,w:b.w,d:b.d}
+      :{id:uid(),no:b.no,name:b.kind==='empty'?'':shortName(b.name||''),cat:b.kind==='empty'?'n':catOf(b.col),tag:'',empty:b.kind==='empty'||undefined,x:b.x,y:b.y,w:b.w,d:b.d});
+    S.plans[F]=out;S.lim[F]={};S.off[F]={v:0,h:[0,0,0]};FLOORS[F].areas.forEach(a=>S.areas[a]=out.some(b=>b.no&&b.no[0]===a));
+    rep.push({f:f.name,F,n:out.filter(b=>!b.empty&&!b.stage).length,e:out.filter(b=>b.empty).length,st:out.filter(b=>b.stage).length,u:Math.round(out.filter(b=>!b.stage).reduce((t,b)=>t+units(b),0)),A:FLOORS[F].areas.filter(a=>S.areas[a])})}
+  const okR=rep.filter(r=>!r.err);if(!okR.length){hist.pop();return modal('匯入攤位圖',`<div class="note bad">${rep.map(r=>`${esc(r.f)}：${r.err}`).join('<br>')}</div>`)}
+  S.started=true;lastGen=null;sel.clear();setFloor(okR[0].F);commit();syncBlank();fitHall();
+  const A=['I','J','K','L','M','N'].filter(a=>S.areas[a]),r=costOf(A);
+  modal('匯入攤位圖：完成',`${rep.map(r=>r.err?`<div class="note bad">${esc(r.f)}：${r.err}</div>`:`<div class="note ok"><b>${r.F}</b>（${esc(r.f)}）：${r.n} 個攤位${r.e?`・空攤 ${r.e}`:''}${r.st?`・舞台／特殊區 ${r.st}`:''}・共約 ${r.u} 攤・開區 ${r.A.join('、')}</div>`).join('')}
+    <ul class="list">${r.rows.map(o=>`<li style="cursor:default"><span>${o.a} 區：圖上 ${o.used}／${o.off} 攤</span><span>${$$n(o.tot)}</span></li>`).join('')}
+    <li style="cursor:default;font-size:15px;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b><br><small style="color:var(--mute)">依目前檔期 ${esc(S.cost.start||'未填')}・進場 ${S.cost.inD}＋展出 ${S.cost.showD}＋撤場 ${S.cost.outD} 天</small></span><span><b>${$$n(r.rent+r.tax)}</b></span></li></ul>
+    <p class="hint">攤位已換成可編輯的方塊（公司名稱、編號、類別顏色都帶進來）。位置以主走道對齊，若有半格偏差可框選後 Alt＋拖曳微調。</p>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn" id="ip_cal">填檔期・週曆試算</button><span><button class="btn" id="ip_st">看結算單</button> <button class="btn pri" id="ip_ok">看平面圖</button></span></div>`);
+  $('#ip_cal').onclick=()=>costCal();$('#ip_st').onclick=()=>settleSheet(()=>importPlanPdf.last&&0);$('#ip_ok').onclick=closeM}
+
 function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('load'));document.head.appendChild(sc)})}
 const CTRY='德|美|日|英|法|韓|港|荷|瑞士|瑞典|義大利|新加坡|香港|英屬維京群島|英屬開曼群島|開曼群島|薩摩亞|塞席爾|模里西斯|馬來西亞|澳大利亞|澳洲|加拿大|奧地利|比利時|丹麥|芬蘭|以色列|泰國|印度|盧森堡|紐西蘭|西班牙|挪威|波蘭|捷克|越南|菲律賓|印尼';
 function shortName(n){n=String(n||'').trim().replace(/[（(][^）)]*[）)]/g,'').trim();
@@ -1286,7 +1397,7 @@ function settleSheet(back){const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>
     ${R.map(x=>`<tr><td ${td}>${x.k}</td><td style="border:1px solid #333;padding:3px 6px;text-align:center">${x.d}</td><td style="border:1px solid #333;padding:3px 6px;text-align:center">${x.t}</td><td ${tr}>${N(x.u)}</td><td ${tr}>${x.n}</td><td ${td}>${x.un}</td><td ${tr}>${N(x.v)}</td></tr>`).join('')}
     <tr><td colspan="6" ${tr}>小計--場地費（未稅）</td><td ${tr}><b>${N(o.sub)}</b></td></tr>
     <tr style="outline:2px solid #d93025;outline-offset:-1px"><td colspan="6" ${tr}>訂金＝場地費之20%</td><td ${tr}>${N(o.dep)}</td></tr>
-    <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">尾款＝實際使用攤位數 <b>${o.used}</b> 之80%　<small>（粗估：${o.auto?'依平面圖':'手動填'} ${o.used}／${o.off}）</small></td><td ${tr}>${N(o.tail)}</td></tr>
+    <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">尾款＝實際使用攤位數 <b>${o.used}</b> 之80%　<small>（粗估：${o.auto?'依隔板範圍':'手動填'} ${o.used}／${o.off}）</small></td><td ${tr}>${N(o.tail)}</td></tr>
     <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">5%VAT（粗估）</td><td ${tr}>${N(o.vat)}</td></tr>
     <tr style="background:#fff5f5"><td colspan="6" style="border:2px solid #d93025;padding:4px 6px;text-align:right"><b>總場地費（含稅）＝訂金＋尾款＋VAT</b>（實際應繳）</td><td style="border:2px solid #d93025;padding:4px 6px;text-align:right"><b>${N(o.tot)}</b></td></tr></table></div>`};
   const R2=(r.rows.reduce((t,o)=>t+o.sub,0)),dep=r.rows.reduce((t,o)=>t+o.dep,0);
@@ -1353,7 +1464,7 @@ function wizSummary(){WZ.flow=false;const A=['I','J','K','L','M','N'].filter(a=>
     <li style="cursor:default"><span>檔期</span><span>${esc(S.cost.start||'')}・進場 ${S.cost.inD}＋展出 ${S.cost.showD}＋退場 ${S.cost.outD} 天</span></li>
     <li style="cursor:default;font-size:16px;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
     <li style="cursor:default"><span>　訂金 20%</span><span>${$$n(r.rows.reduce((t,o)=>t+o.dep,0))}</span></li>
-    <li style="cursor:default;color:#6b7280"><span>　尾款 80%×使用比例（粗估，依平面圖）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
+    <li style="cursor:default;color:#6b7280"><span>　尾款 80%×使用比例（粗估，依隔板範圍）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
     <li style="cursor:default;color:#6b7280"><span>　5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
     <li style="cursor:default;color:#6b7280"><span>參考：場地費小計（未稅）</span><span>${$$n(r.gross)}</span></li>
     <li style="cursor:default;color:#6b7280"><span>清潔費（含稅）</span><span>${$$n(r.clean)}</span></li></ul>
@@ -1361,6 +1472,8 @@ function wizSummary(){WZ.flow=false;const A=['I','J','K','L','M','N'].filter(a=>
   $('#ws_st').onclick=()=>settleSheet(wizSummary);$('#ws_cal').onclick=()=>costCal();$('#ws_ok').onclick=()=>{closeM();fitHall()}}
 $('#wizBtn').onclick=()=>{WZ.A=null;WZ.U=0;WZ.N=0;wizard()};
 $('#impBtn').onclick=()=>$('#fileXls').click();
+$('#pdfBtn').onclick=()=>$('#filePdf').click();$('#blankPdf').onclick=()=>$('#filePdf').click();
+$('#filePdf').onchange=e=>{const fs=[...e.target.files];e.target.value='';importPlanPdf(fs)};
 $('#fileXls').onchange=e=>{const f=e.target.files[0];if(f)importXls(f);e.target.value=''};
 $('#wipe').onclick=()=>{const keep=B().filter(b=>b.locked);if(B().length===keep.length)return toast('已經是空的');push();S.plans[S.floor]=keep;sel.clear();lastGen=null;commit();toast(`${S.floor} 已清空${keep.length?`（保留 ${keep.length} 個鎖定攤位）`:''}，按「↶ 上一步」可救回`)};
 $('#setBtn').onclick=settings;$('#numBtn').onclick=numDialog;$('#expBtn').onclick=exportDialog;
@@ -1368,6 +1481,7 @@ document.addEventListener('pointerdown',e=>{const m=$('.menu');if(m.open&&!m.con
 document.addEventListener('keydown',e=>{
   if(e.target.matches('input,textarea,select'))return;
   if($('#modal').classList.contains('on')){if(e.key==='Escape')closeM();return}
+  if(mode==='wall'&&e.key==='Escape'){if(WD.a){WD.a=null;wdPrev()}else setMode('select');return}
   const k=e.key.toLowerCase(),c=e.ctrlKey||e.metaKey;
   if(e.key==='Alt'){e.preventDefault();svg.classList.add('edit');return}
   if(k===' '){space=true;e.preventDefault();return}
@@ -1382,6 +1496,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='l')toggleLock();
   else if(k==='f')setMode(mode==='fill'?'select':'fill');
   else if(k==='a')setMode(mode==='aisle'?'select':'aisle');
+  else if(k==='w')setMode(mode==='wall'?'select':'wall');
   else if(k==='escape'){sel.clear();render();renderPane()}
   else if(k.startsWith('arrow')){e.preventDefault();const s=e.shiftKey?3:S.snap;nudge(k==='arrowleft'?-s:k==='arrowright'?s:0,k==='arrowup'?-s:k==='arrowdown'?s:0)}
 });
