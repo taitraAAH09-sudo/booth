@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V43</title>
+<title>攤位圖規劃台 V44</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -143,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V43</small></h1>
+  <h1>攤位圖規劃台<small>V44</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -484,7 +484,7 @@ function generate(silent){S.started=true;
     const pf=q=>{const f=q.pin?(q.pin.length===2?q.pin:fOf(q.pin)):pinF(S.cats.find(c=>c.id===q.cat));return floors.includes(f)?f:''},free=[];
     for(const q of reqs){const f=pf(q);if(f){parts[f].push(q);used[f]+=q.w*q.d/9}else free.push(q)}
     floors.forEach(f=>{const o=f==='1F'?'4F':'1F';if(!floors.includes(o))return;const lim=cap[f]*0.9;if(used[f]<=lim)return;
-      const mv=parts[f].filter(q=>pf(q)===f&&!q.pin).sort((a,b)=>a.w*a.d-b.w*b.d);while(used[f]>lim&&mv.length){const q=mv.shift();parts[f].splice(parts[f].indexOf(q),1);parts[o].push(q);used[f]-=q.w*q.d/9;used[o]+=q.w*q.d/9;q.moved=1}});
+      const mv=parts[f].filter(q=>pf(q)===f&&!q.pin&&!pinHard(S.cats.find(c=>c.id===q.cat))).sort((a,b)=>a.w*a.d-b.w*b.d);while(used[f]>lim&&mv.length){const q=mv.shift();parts[f].splice(parts[f].indexOf(q),1);parts[o].push(q);used[f]-=q.w*q.d/9;used[o]+=q.w*q.d/9;q.moved=1}});
     for(const q of free){const u=q.w*q.d/9,f=(used['1F']+u)/cap['1F']<=(used['4F']+u)/cap['4F']?'1F':'4F';parts[f].push(q);used[f]+=u}
     parts['1F'].sort((a,b)=>b.w*b.d-a.w*a.d);parts['4F'].sort((a,b)=>b.w*b.d-a.w*a.d)}
   const fail=[],per={},pinMiss=[];let all=[];
@@ -504,7 +504,8 @@ function generate(silent){S.started=true;
     parts[f].sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||CO.indexOf(a.cat)-CO.indexOf(b.cat)||b.w*b.d-a.w*a.d);
     const aHome=a=>new Set(zs.filter(z=>z.y0<FL.areaY[a][1]-E&&z.y1>FL.areaY[a][0]+E));
     for(const q of parts[f]){PC={home:q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?aHome(q.pin):homes[q.cat],cent:cents[q.cat]&&cents[q.cat].n?{x:cents[q.cat].x/cents[q.cat].n,y:cents[q.cat].y/cents[q.cat].n}:null};
-      const pz=q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?PC.home:null,r=zs.length?((pz&&placeOne(zs.filter(z=>pz.has(z)||(z.strip&&z.y0<FL.areaY[q.pin][1]&&z.y1>FL.areaY[q.pin][0])),q.w,q.d))||placeOne(zs,q.w,q.d)):null;if(pz&&r){const cy=r.y+r.d/2;if(cy<FL.areaY[q.pin][0]||cy>FL.areaY[q.pin][1])pinMiss.push(`${q.name} 指定 ${q.pin} 區，但那區放不下 ${rd(q.w)}×${rd(q.d)}m，先排到旁邊`)}if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,pin:q.pin||undefined,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
+      const qc=S.cats.find(c=>c.id===q.cat),hA=pinHard(qc)&&pinA(qc)&&FL.areas.includes(pinA(qc))?pinA(qc):'',inA=a=>zs.filter(z=>(z.y0<FL.areaY[a][1]-E&&z.y1>FL.areaY[a][0]+E)),onlyA=(a,fn)=>{const W=FL.wall,[y0,y1]=FL.areaY[a],sv=LOCKS;LOCKS=LOCKS.concat([{x:W.x0-50,y:W.y0-50,w:W.x1-W.x0+100,d:y0-W.y0+50},{x:W.x0-50,y:y1,w:W.x1-W.x0+100,d:W.y1-y1+50}]);try{return fn()}finally{LOCKS=sv}};
+      const pz=q.pin&&q.pin.length===1&&FL.areas.includes(q.pin)?PC.home:null,r=!zs.length?null:hA&&!pz?onlyA(hA,()=>placeOne(inA(hA),q.w,q.d)):((pz&&onlyA(q.pin,()=>placeOne(inA(q.pin),q.w,q.d)))||placeOne(zs,q.w,q.d));if(pz&&r){const cy=r.y+r.d/2;if(cy<FL.areaY[q.pin][0]||cy>FL.areaY[q.pin][1])pinMiss.push(`${q.name} 指定 ${q.pin} 區，但那區放不下 ${rd(q.w)}×${rd(q.d)}m，先排到旁邊`)}if(r){const c=cents[q.cat]||(cents[q.cat]={x:0,y:0,n:0}),a=r.w*r.d;c.x+=(r.x+r.w/2)*a;c.y+=(r.y+r.d/2)*a;c.n+=a}if(r)out.push({id:uid(),no:'',name:q.name,cat:q.cat,tag:q.tag,pin:q.pin||undefined,x:rd(r.x),y:rd(r.y),w:rd(r.w),d:rd(r.d)});else fail.push(q)}
     PC=null;
     if(g.fill){const em=[];fillRest(zs,em);em.forEach(r=>out.push({id:uid(),no:'',name:'',cat:'n',tag:'',empty:true,...r}));gatherEmpty(out)}
     LOCKS=[];if(g.number)autoNumber(out);
@@ -768,9 +769,18 @@ function costOf(A,c){c=c||S.cost;const cd=calDays(c),ngM=c.outD>0?1:1.2,lastI=c.
   const rent=rows.reduce((t,r)=>t+r.dep+r.tail,0),tax=rows.reduce((t,r)=>t+r.vat,0),gross=rows.reduce((t,r)=>t+r.sub,0),days=c.inD+c.outD+c.showD+(c.night?1:0),clean=(CLEAN[Math.min(A.length,6)]||0)*days;
   const otAll=rows.reduce((t,r)=>t+r.ot+r.oi+r.ng,0),ex=extrasOf(c,A);return{rows,nH,ngM,ngAll:rows.reduce((t,r)=>t+r.ng,0),gross,rent,tax,days,clean,otAll,ex,base:rent+tax+clean,total:rent+tax+clean+ex.total,net:rent+clean/1.05+ex.net}}
 /* 展區指定樓層／區：cat.pin = '' | '1F' | '4F' | 'I'…'N' */
-const PINS=['','1F','4F','I','J','K','L','M','N'],pinLabel=v=>!v?'自動':v.length>1?`${v} 整層`:`${fOf(v)} ${v} 區`;
+const PINS=['','1F','1F!','4F','4F!','I','I!','J','J!','K','K!','L','L!','M','M!','N','N!'],pinLabel=v=>{if(!v)return'自動';const h=v.endsWith('!'),b=v.replace('!','');return(h?'一定在 ':'盡量在 ')+(b.length>1?b:`${fOf(b)} ${b} 區`)};
 const pinOpts=v=>PINS.map(p=>`<option value="${p}"${(v||'')===p?' selected':''}>${pinLabel(p)}</option>`).join('');
-const pinF=c=>!c||!c.pin?'':c.pin.length>1?c.pin:fOf(c.pin), pinA=c=>c&&c.pin&&c.pin.length===1?c.pin:'';
+const pinB=c=>c&&c.pin?c.pin.replace('!',''):'',pinF=c=>{const b=pinB(c);return !b?'':b.length>1?b:fOf(b)}, pinA=c=>{const b=pinB(c);return b.length===1?b:''},pinHard=c=>!!(c&&c.pin&&c.pin.endsWith('!'));
+function catPinModal(){const cnt={};['1F','4F'].forEach(f=>(S.plans[f]||[]).forEach(b=>{if(b.empty||b.stage)return;const o=cnt[b.cat]||(cnt[b.cat]={n:0,u:0,f:{}});o.n++;o.u+=units(b);o.f[f]=(o.f[f]||0)+1}));
+  S.ex.forEach(x=>{const o=cnt[x.cat]||(cnt[x.cat]={n:0,u:0,f:{},ex:0});o.ex=(o.ex||0)+1});
+  const cats=S.cats.filter(c=>c.id!=='n'&&cnt[c.id]);
+  modal('展區 → 樓層／區 設定',`<table class="tier" style="font-size:13px"><tr><th style="text-align:left">展區</th><th>家數</th><th>攤數</th><th>現在在</th><th>放在</th></tr>
+    ${cats.map(c=>{const o=cnt[c.id];return`<tr><td style="text-align:left"><i class="sw" style="background:${esc(c.color)}"></i>${esc(c.name)}</td><td>${o.ex||o.n}</td><td>${rd(o.u)}</td><td style="font-size:12px">${Object.entries(o.f).map(([f,n])=>`${f} ${n}`).join('・')||'—'}</td><td><select class="sel" data-cp="${c.id}">${pinOpts(c.pin)}</select></td></tr>`}).join('')}</table>
+    <p class="hint">「盡量在」：先排在那裡，放不下會往另一層或旁邊挪。「一定在」：只排在那裡，放不下就列為放不下，不會亂跑。</p>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn" id="cp_close">關閉</button><button class="btn pri" id="cp_go">套用並重新產生</button></div>`);
+  $$('[data-cp]').forEach(sl=>sl.onchange=()=>{const c=S.cats.find(c=>c.id===sl.dataset.cp);c.pin=sl.value||undefined;save()});
+  $('#cp_close').onclick=()=>{closeM();renderPane()};$('#cp_go').onclick=()=>{closeM();const{F,Ar}=pinNeeds();Ar.forEach(a=>S.areas[a]=true);F.forEach(f=>{if(!FLOORS[f].areas.some(a=>S.areas[a]))FLOORS[f].areas.slice(0,2).forEach(a=>S.areas[a]=true)});generate()}}
 function pinNeeds(){const used=new Set((S.gen.useEx?S.ex:[]).map(x=>x.cat).concat(S.gen.tiers.filter(t=>t.n>0).map(t=>t.cat)));const F=new Set(),Ar=new Set();
   S.cats.forEach(c=>{if(!used.has(c.id)||!c.pin)return;F.add(pinF(c));if(pinA(c))Ar.add(pinA(c))});return{F,Ar}}
 const cfgOK=A=>{const{F,Ar}=pinNeeds(),fl=new Set(A.map(fOf));return[...F].every(f=>fl.has(f))&&[...Ar].every(a=>A.includes(a))};
@@ -1034,7 +1044,8 @@ function renderPane(){
     if(lastConf.size)h+=`<span class="h" style="margin-top:16px">重疊</span><ul class="list">`+[...lastConf].map(([id,r])=>{const b=byId(id);return`<li class="bad" data-go="${id}"><span>${esc(b.no||b.name||b.w+'×'+b.d)}</span><span class="r">${esc(r[0])}</span></li>`}).join('')+'</ul>';
     const sizes={};sold.forEach(b=>{const k=`${rd(units(b))} 攤（${Math.max(b.w,b.d)}×${Math.min(b.w,b.d)}m）`;sizes[k]=(sizes[k]||0)+1});
     h+=`<span class="h" style="margin-top:16px">尺寸分布</span><ul class="list">`+Object.entries(sizes).sort((a,b)=>parseFloat(b[0])-parseFloat(a[0])).map(([k,v])=>`<li style="cursor:default"><span>${k}</span><span class="r">${v} 家</span></li>`).join('')+'</ul>';
-    P.innerHTML=h;$$('[data-go]').forEach(li=>li.onclick=()=>focusBooth(byId(li.dataset.go)));return;
+    h=`<div class="row" style="margin:0 0 10px"><button class="btn pri" id="st_cats">展區 → 樓層／區 設定</button></div>`+h;
+    P.innerHTML=h;$$('[data-go]').forEach(li=>li.onclick=()=>focusBooth(byId(li.dataset.go)));$('#st_cats').onclick=catPinModal;return;
   }
   const q=(renderPane.q||'').toLowerCase(),rows=S.ex.filter(x=>!q||x.name.toLowerCase().includes(q));
   let h=`<p class="hint">從 Excel 複製「公司｜攤數｜類別」三欄貼上，攤數可寫 16 或 4*4。生成器會依攤數由大到小把名單排進好位置；也可以先點攤位、再點廠商手動指派。</p>
