@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V42</title>
+<title>攤位圖規劃台 V43</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -143,7 +143,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V42</small></h1>
+  <h1>攤位圖規劃台<small>V43</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -651,6 +651,10 @@ function editBooth(b){if(!b)return;const u=rd(units(b)),cw=rd(b.w/3),cd=rd(b.d/3
     <label for="e_cat">類別</label><select id="e_cat">${catOpts(b.cat)}</select></div>
     <h3>攤位方向與形狀（${u} 攤，1 格＝3×3m）</h3>
     <div class="chips">${sh.map(([w,d])=>`<label class="chip"><input type="radio" name="e_sh" value="${w}x${d}"${Math.abs(w-cw)<E&&Math.abs(d-cd)<E?' checked':''}>${w}×${d} 格<small>（${w*3}×${d*3}m）</small></label>`).join('')}</div>
+    ${(()=>{const A=u*9,sq=[];if(sh.some(([w,d])=>Math.abs(w-d)<E))return '';const k=Math.sqrt(A)/1.5,c=[Math.floor(k),Math.ceil(k)];const seen=new Set();
+      [[c[0],c[0]],[c[0],c[1]],[c[1],c[1]]].forEach(([a,b])=>{const w=a*1.5,d=b*1.5,key=w+'x'+d;if(!seen.has(key)&&w>0){seen.add(key);sq.push([w,d])}});
+      sq.sort((x,y)=>Math.abs(x[0]*x[1]-A)-Math.abs(y[0]*y[1]-A));
+      return `<div class="chips" style="margin-top:6px"><span class="h" style="margin:8px 4px 0 0">近正方形（1.5m 格）</span>${sq.slice(0,3).map(([w,d])=>{const uu=rd(w*d/9),df=rd(uu-u);return `<label class="chip"><input type="radio" name="e_sh" value="${rd(w/3)}x${rd(d/3)}"${Math.abs(w-b.w)<E&&Math.abs(d-b.d)<E?' checked':''}>${w}×${d}m<small>（${uu} 攤${df?`，${df>0?'+':''}${df}`:''}）</small></label>`}).join('')}</div>`})()}
     <div class="row"><button class="btn" id="e_rot">轉 90°</button><span class="hint" style="margin:0">或自訂：</span><input class="num" id="e_w" type="number" step="0.5" min="0.5" value="${b.w}" aria-label="寬（m）"> × <input class="num" id="e_d" type="number" step="0.5" min="0.5" value="${b.d}" aria-label="深（m）"> m</div>
     <h3>附加費</h3>
     <div class="row"><label class="chk" style="margin:0"><input type="checkbox" id="e_dd"${b.dd>0?' checked':''}>雙層攤位，2 樓面積</label><input class="num" id="e_ddm" type="number" min="0" value="${b.dd||rd(b.w*b.d)}"> ㎡</div>
@@ -672,7 +676,7 @@ function editBooth(b){if(!b)return;const u=rd(units(b)),cw=rd(b.w/3),cd=rd(b.d/3
     {const pv=$('#e_pin').value,nm=$('#e_name').value.trim();b.pin=pv||undefined;S.ex.forEach(x=>{if(x.name===nm||x.name===b.name)x.pin=pv||undefined})}
     b.locked=$('#e_lock').checked||undefined;b.dd=$('#e_dd').checked?(+$('#e_ddm').value||0)||undefined:undefined;b.hi=$('#e_hi').checked?(+$('#e_him').value||0)||undefined:undefined;b.name=v.name;b.no=$('#e_no').value.trim();b.cat=$('#e_cat').value;b.dir=v.dir==='auto'?undefined:v.dir;b.fs=v.fs<1?v.fs:undefined;
     if(b.name){b.empty=false;if(b.cat==='n')b.cat=S.cats[0].id}else if(b.cat!=='n')b.empty=false;
-    if(Math.abs(v.w-b.w)>E||Math.abs(v.d-b.d)>E){const cx=b.x+b.w/2,cy=b.y+b.d/2;b.w=rd(v.w);b.d=rd(v.d);b.x=rd(cx-b.w/2);b.y=rd(cy-b.d/2);}
+    if(Math.abs(v.w-b.w)>E||Math.abs(v.d-b.d)>E){const cx=b.x+b.w/2,cy=b.y+b.d/2;b.w=rd(v.w);b.d=rd(v.d);b.x=rd(Math.round((cx-b.w/2)/1.5)*1.5);b.y=rd(Math.round((cy-b.d/2)/1.5)*1.5);}
     closeM();commit();if(lastConf.get(b.id))toast('已套用，但新形狀和旁邊攤位重疊，請用 Alt＋拖曳調整')}; 
   setTimeout(()=>$('#e_name').focus(),0)}
 svg.addEventListener('wheel',e=>{e.preventDefault();const p=world(e),f=e.deltaY>0?1.15:1/1.15,nw=view.w*f;if(nw<4||nw>900)return;
