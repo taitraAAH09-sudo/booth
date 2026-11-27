@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>攤位圖規劃台 V32</title>
+<title>攤位圖規劃台 V33</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -135,7 +135,7 @@ textarea.code{width:100%;min-height:90px;font:12px/1.45 ui-monospace,Consolas,mo
 </head>
 <body>
 <header>
-  <h1>攤位圖規劃台<small>V32</small></h1>
+  <h1>攤位圖規劃台<small>V33</small></h1>
   <div class="seg" role="group" aria-label="存檔"><button data-slot="1" title="存檔 1">存檔1</button><button data-slot="2" title="存檔 2">存檔2</button><button data-slot="3" title="存檔 3">存檔3</button></div>
   <button class="btn pri" id="wizBtn" title="先算天數、區域與費用，再開始排攤位">＋ 開新展覽</button>
   <div class="seg" role="group" aria-label="樓層"><button data-floor="1F" title="1F 一樓展場">1F</button><button data-floor="4F" title="4F 雲端展場">4F</button></div>
@@ -730,8 +730,11 @@ const cfgOK=A=>{const{F,Ar}=pinNeeds(),fl=new Set(A.map(fOf));return[...F].every
 const CONFIGS=(()=>{const o=[['I'],['J'],['K'],['I','J'],['J','K'],['I','J','K'],['L'],['M'],['N'],['L','M'],['M','N'],['L','M','N']];
   for(const a of[['I','J'],['J','K']])for(const b of[['L','M'],['M','N']])o.push([...a,...b]);o.push(['I','J','K','L','M','N']);return o})();
 const cfgName=A=>{const a=A.filter(x=>fOf(x)==='1F'),b=A.filter(x=>fOf(x)==='4F');return[a.length?`1F ${a.join('＋')}`:'',b.length?`4F ${b.join('＋')}`:''].filter(Boolean).join('　＋　')};
+/* 還沒排圖時的總場地費（含稅）預估：訂金 20% ＋ 尾款 80%×(需求攤數／可排格數) ＋ 5% VAT */
+function estFee(A,U){const cap={...capFor('1F'),...capFor('4F')},C=A.reduce((t,a)=>t+cap[a],0),k=U&&C?Math.min(1,U/C):1,r=costOf(A);
+  return r.rows.reduce((t,o)=>{const d=Math.round(o.sub*0.2),tl=Math.round(o.sub*0.8*k);return t+d+tl+Math.round((d+tl)*0.05)},0)}
 function recommend(U){if(!U)return[];const cap={...capFor('1F'),...capFor('4F')};
-  const ok=CONFIGS.filter(cfgOK).map(A=>({A,c:A.reduce((t,a)=>t+cap[a],0),dual:new Set(A.map(fOf)).size>1,cost:costOf(A).total})).filter(o=>o.c>=U&&(U<=1300||o.dual));
+  const ok=CONFIGS.filter(cfgOK).map(A=>({A,c:A.reduce((t,a)=>t+cap[a],0),dual:new Set(A.map(fOf)).size>1,cost:estFee(A,U)})).filter(o=>o.c>=U&&(U<=1300||o.dual));
   const single=ok.filter(o=>!o.dual);return(single.length?single:ok).sort((a,b)=>a.cost-b.cost).slice(0,3)}
 function selWarn(){const s1=['I','J','K'].filter(a=>S.areas[a]),s4=['L','M','N'].filter(a=>S.areas[a]),w=[];
   if(s1.join('')==='IK')w.push('1F 的 I＋K 不相鄰，中間 J 區空著');if(s4.join('')==='LN')w.push('4F 的 L＋N 不相鄰，中間 M 區空著');
@@ -762,11 +765,11 @@ function genPane(P){
     <div class="row" style="margin:0"><input class="num" style="width:84px" id="g_totalU" type="number" min="0" value="${esc(g.totalU)}" aria-label="總攤數">攤　<input class="num" style="width:84px" id="g_total" type="number" min="0" value="${esc(g.total)}" aria-label="廠商家數">家
       <button class="btn" id="g_rec">建議開區</button></div>
     <p class="hint">先填總攤數就能建議開幾樓、幾區；超過 1,300 攤會上下樓各開 2 區或 3 區。</p>
-    ${need?(recs.length?`<div class="cats">${recs.map((o,k)=>`<div class="style" style="margin:0"><span><b>${k===0?'建議　':''}${cfgName(o.A)}</b><br><span style="color:var(--mute)">約 ${o.c} 格・使用率 ${Math.round(need/o.c*100)}%・預估 ${$$n(o.cost)}</span></span><button class="btn${k===0?' pri':''}" data-cfg="${o.A.join('')}">套用</button></div>`).join('')}</div>`:`<div class="note bad">${rd(need)} 攤超過全館容量，請減少攤數或縮小走道。</div>`):''}</div>
+    ${need?(recs.length?`<div class="cats">${recs.map((o,k)=>`<div class="style" style="margin:0"><span><b>${k===0?'建議　':''}${cfgName(o.A)}</b><br><span style="color:var(--mute)">約 ${o.c} 格・使用率 ${Math.round(need/o.c*100)}%・場地費含稅約 ${$$n(o.cost)}</span></span><button class="btn${k===0?' pri':''}" data-cfg="${o.A.join('')}">套用</button></div>`).join('')}</div>`:`<div class="note bad">${rd(need)} 攤超過全館容量，請減少攤數或縮小走道。</div>`):''}</div>
     <div class="sec"><span class="h">② 選區（1 格＝3×3m 標準攤）</span>
     <div class="chips"><span class="h" style="margin:8px 2px 0 0">1F</span>${['I','J','K'].map(a=>chip('1F',a)).join('')}</div>
     <div class="chips" style="margin-top:6px"><span class="h" style="margin:8px 2px 0 0">4F</span>${['L','M','N'].map(a=>chip('4F',a)).join('')}</div>
-    <div class="note" style="margin-top:10px">已選 ${selA.length?cfgName(selA):'—'}：約 <b>${capSel}</b> 格${need?`；需求 ${rd(need)} 攤，使用率 <b style="color:${need>capSel?'var(--bad)':'inherit'}">${capSel?Math.round(need/capSel*100):0}%</b>${need>capSel?'，不夠放':''}`:''}${cs?`<br>場地＋清潔費預估 <b>${$$n(cs.total)}</b>（${S.cost.inD+S.cost.outD} 天進出場＋${S.cost.showD} 天展出）<a href="#" id="goCost" style="margin-left:6px">看明細</a>`:''}</div>
+    <div class="note" style="margin-top:10px">已選 ${selA.length?cfgName(selA):'—'}：約 <b>${capSel}</b> 格${need?`；需求 ${rd(need)} 攤，使用率 <b style="color:${need>capSel?'var(--bad)':'inherit'}">${capSel?Math.round(need/capSel*100):0}%</b>${need>capSel?'，不夠放':''}`:''}${cs?`<br>總場地費（含稅）約 <b>${$$n(B().length?cs.rent+cs.tax:estFee(selA,need))}</b>＋清潔 ${$$n(cs.clean)}（${S.cost.inD+S.cost.outD} 天進出場＋${S.cost.showD} 天展出）<a href="#" id="goCost" style="margin-left:6px">看明細</a>`:''}</div>
     ${warn.length?`<div class="note bad">${warn.map(esc).join('<br>')}</div>`:''}
     <label class="chk"><input type="checkbox" id="g_strip"${g.strips?' checked':''}>含牆邊排（南北牆的單排攤位）</label></div>
 ${useEx?`<div class="sec"><span class="h">③ 名單</span>
@@ -833,6 +836,7 @@ function costPane(P){
     <tr><th>區</th><th style="text-align:right">小計（未稅）</th><th style="text-align:right">使用攤位</th><th style="text-align:right">總場地費（含稅）</th></tr>
     ${r.rows.map(x=>`<tr><td class="u">${x.a}</td><td style="text-align:right">${$$n(x.sub)}</td><td style="text-align:right">${x.used}/${x.off}</td><td style="text-align:right"><b>${$$n(x.tot)}</b></td></tr>`).join('')}</table>
     <ul class="list" style="margin-top:8px">
+    <li style="cursor:default;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
     <li style="cursor:default"><span>場地費（未稅，訂金 20%＋尾款 80%×使用比例）</span><span>${$$n(r.rent)}</span></li>
     <li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
     <li style="cursor:default"><span>清潔費（${A.length} 區 × ${r.days} 天，含稅）</span><span>${$$n(r.clean)}</span></li>
@@ -883,7 +887,7 @@ function costCal(wiz){const c=S.cost;if(!c.start){const d=new Date();d.setDate(d
       <td style="text-align:right">${$$n(o.sub)}</td><td style="text-align:right">${$$n(o.dep)}</td><td style="text-align:right">${$$n(o.tail)}<br><small style="color:var(--mute)">${o.used}/${o.off}</small></td><td style="text-align:right">${$$n(o.vat)}</td><td style="text-align:right"><b>${$$n(o.tot)}</b></td></tr>`).join('')}
     <tr><td colspan="5"><b>總場地費合計</b></td><td style="text-align:right">${$$n(r.gross)}</td><td></td><td></td><td style="text-align:right">${$$n(r.tax)}</td><td style="text-align:right"><b>${$$n(r.rent+r.tax)}</b></td></tr></table></div>
     <p class="hint">尾款只收「應使用攤位數 ÷ 該區攤位數」的比例，所以一區沒用滿時場地費會打折；應使用攤位數空白時，依平面圖這區的攤位數（含空攤）自動帶入。</p>
-    <h3>合計</h3><ul class="list"><li style="cursor:default"><span>場地費（未稅，訂金＋尾款）</span><span>${$$n(r.rent)}</span></li><li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
+    <h3>合計</h3><ul class="list"><li style="cursor:default;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li><li style="cursor:default"><span>場地費（未稅，訂金＋尾款）</span><span>${$$n(r.rent)}</span></li><li style="cursor:default"><span>營業稅 5%</span><span>${$$n(r.tax)}</span></li>
     <li style="cursor:default"><span>清潔費（${A.length} 區 × ${r.days} 天，含稅）</span><span>${$$n(r.clean)}</span></li><li style="cursor:default"><span>場地＋清潔（含稅）</span><span>${$$n(r.base)}</span></li></ul>
     ${(()=>{const R=r.rent+r.tax,d0=cd[0].d,ds=n=>{const d=new Date(d0);d.setDate(d.getDate()-n);return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} 前`};
       return `<h3>繳款時程（依場地費含稅 ${$$n(R)} 計，起租日 ${d0.getFullYear()}/${d0.getMonth()+1}/${d0.getDate()}）</h3><ul class="list">
@@ -1219,12 +1223,12 @@ function wizUpload(){modal('開新展覽 2／4：廠商總表',`<p>請上傳報�
   <div class="row" style="justify-content:space-between"><button class="btn ghost" id="wu_back">上一步</button><button class="btn ghost" id="wu_skip">還沒有名單，先填總攤數</button></div>`);
   $('#wu_f').onclick=()=>{WZ.flow=true;$('#fileXls').click()};$('#wu_back').onclick=()=>wizard();$('#wu_skip').onclick=()=>{WZ.flow=true;WZ.U=0;WZ.N=0;wizAreas()}}
 function wizAreas(){const U=WZ.U||+S.gen.totalU||0,cap={...capFor('1F'),...capFor('4F')},all=['I','J','K','L','M','N'];
-  const opts=U?CONFIGS.filter(cfgOK).map(A=>({A,c:A.reduce((t,a)=>t+cap[a],0),dual:new Set(A.map(fOf)).size>1,cost:costOf(A).total})).filter(o=>o.c>=U*1.02&&(U<=1300||o.dual)):[];
+  const opts=U?CONFIGS.filter(cfgOK).map(A=>({A,c:A.reduce((t,a)=>t+cap[a],0),dual:new Set(A.map(fOf)).size>1,cost:estFee(A,U)})).filter(o=>o.c>=U*1.02&&(U<=1300||o.dual)):[];
   const single=opts.filter(o=>!o.dual),pool=(single.length?single:opts).sort((a,b)=>a.c-b.c||a.cost-b.cost).slice(0,4);
   if(!WZ.A)WZ.A=pool.length?pool[0].A:all.filter(a=>S.areas[a]);
   const cur=WZ.A,curCap=cur.reduce((t,a)=>t+cap[a],0);
   modal('開新展覽 3／4：選區',`${WZ.U?`<div class="note ok">已匯入 <b>${WZ.N}</b> 家・共 <b>${WZ.U}</b> 攤</div>`:`<div class="fld" style="grid-template-columns:110px minmax(0,1fr)"><label for="wa_u">預計總攤數</label><input id="wa_u" type="number" min="0" value="${U||''}" placeholder="例：1366"></div>`}
-    ${U?(pool.length?`<h3>系統建議（${U>1300?'超過 1,300 攤，上下樓各開 2 或 3 區':'夠放就好、愈省愈前面'}）</h3><ul class="list">${pool.map((o,k)=>`<li data-wa="${o.A.join('')}" class="${o.A.join('')===cur.join('')?'on':''}"><span>${k===0?'<b style="color:var(--acc)">建議</b>　':''}<b>${esc(cfgName(o.A))}</b><br><small style="color:var(--mute)">約 ${o.c} 格・使用率 ${Math.round(U/o.c*100)}%</small></span><span>${$$n(o.cost)}</span></li>`).join('')}</ul>`:'<div class="note bad">全館都放不下，請手動選區或減少攤數。</div>'):''}
+    ${U?(pool.length?`<h3>系統建議（${U>1300?'超過 1,300 攤，上下樓各開 2 或 3 區':'夠放就好、愈省愈前面'}）</h3><ul class="list">${pool.map((o,k)=>`<li data-wa="${o.A.join('')}" class="${o.A.join('')===cur.join('')?'on':''}"><span>${k===0?'<b style="color:var(--acc)">建議</b>　':''}<b>${esc(cfgName(o.A))}</b><br><small style="color:var(--mute)">約 ${o.c} 格・使用率 ${Math.round(U/o.c*100)}%</small></span><span style="text-align:right"><small style="color:var(--mute)">總場地費含稅約</small><br>${$$n(o.cost)}</span></li>`).join('')}</ul>`:'<div class="note bad">全館都放不下，請手動選區或減少攤數。</div>'):''}
     <h3>或自己勾</h3><div class="chips">${all.map(a=>`<label class="chip"><input type="checkbox" data-wc="${a}"${cur.includes(a)?' checked':''}>${fOf(a)} ${a} 區 <small>${cap[a]} 格</small></label>`).join('')}</div>
     <p class="hint">目前選 <b>${esc(cfgName(cur)||'—')}</b>：約 ${curCap} 格${U?`，使用率 <b style="color:${U>curCap?'var(--bad)':'inherit'}">${curCap?Math.round(U/curCap*100):0}%</b>${U>curCap?'，放不下':''}`:''}。下一步依這些區算錢。</p>
     <div class="row" style="justify-content:space-between;margin-top:14px"><button class="btn ghost" id="wa_back">上一步</button><button class="btn pri" id="wa_next">下一步：週曆試算</button></div>`);
@@ -1257,10 +1261,10 @@ function settleSheet(back){const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>
     <tr>${['項目','日期','每日使用時間','單價','單位','','金額'].map(h=>`<th ${td}>${h}</th>`).join('')}</tr>
     ${R.map(x=>`<tr><td ${td}>${x.k}</td><td style="border:1px solid #333;padding:3px 6px;text-align:center">${x.d}</td><td style="border:1px solid #333;padding:3px 6px;text-align:center">${x.t}</td><td ${tr}>${N(x.u)}</td><td ${tr}>${x.n}</td><td ${td}>${x.un}</td><td ${tr}>${N(x.v)}</td></tr>`).join('')}
     <tr><td colspan="6" ${tr}>小計--場地費（未稅）</td><td ${tr}><b>${N(o.sub)}</b></td></tr>
-    <tr><td colspan="6" ${tr}>訂金＝場地費之20%</td><td ${tr}><b>${N(o.dep)}</b></td></tr>
+    <tr style="outline:2px solid #d93025;outline-offset:-1px"><td colspan="6" ${tr}>訂金＝場地費之20%</td><td ${tr}>${N(o.dep)}</td></tr>
     <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">尾款＝實際使用攤位數 <b>${o.used}</b> 之80%　<small>（粗估：${o.auto?'依平面圖':'手動填'} ${o.used}／${o.off}）</small></td><td ${tr}>${N(o.tail)}</td></tr>
     <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">5%VAT（粗估）</td><td ${tr}>${N(o.vat)}</td></tr>
-    <tr style="${est}"><td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right">總場地費（含稅）（粗估）</td><td ${tr}>${N(o.tot)}</td></tr></table></div>`};
+    <tr style="background:#fff5f5"><td colspan="6" style="border:2px solid #d93025;padding:4px 6px;text-align:right"><b>總場地費（含稅）＝訂金＋尾款＋VAT</b>（實際應繳）</td><td style="border:2px solid #d93025;padding:4px 6px;text-align:right"><b>${N(o.tot)}</b></td></tr></table></div>`};
   const R2=(r.rows.reduce((t,o)=>t+o.sub,0)),dep=r.rows.reduce((t,o)=>t+o.dep,0);
   modal('場地租用結算單（粗估）',`<div class="row" style="margin-top:0;align-items:flex-end">
       <label class="h" style="margin:0">進出場時段<input id="st_io" value="${esc(T.io)}" style="display:block;width:130px;margin-top:4px;padding:6px 8px;border:1px solid var(--line);border-radius:8px"></label>
@@ -1269,12 +1273,12 @@ function settleSheet(back){const c=S.cost,A=['I','J','K','L','M','N'].filter(a=>
     <div class="note">白底的部分（各項目、<b>小計</b>、<b>訂金 20%</b>）照您填的需求就能確定；<span style="background:#f3f4f6;padding:0 4px">灰底</span>的尾款、VAT、總場地費要展後依實際使用攤位數結算，這裡先用平面圖的攤位數粗估。</div>
     ${r.rows.map(sheet).join('')}
     <h3>彙總</h3><ul class="list">
-      <li style="cursor:default"><span>場地費小計合計（未稅）</span><span><b>${$$n(R2)}</b></span></li>
-      <li style="cursor:default"><span>訂金合計（場地費之 20%，未稅）</span><span><b>${$$n(dep)}</b></span></li>
-      <li style="cursor:default;color:#6b7280"><span>尾款合計（粗估）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
-      <li style="cursor:default;color:#6b7280"><span>5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
-      <li style="cursor:default;font-size:15px"><span><b>總場地費合計（含稅，粗估）</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
-      <li style="cursor:default;color:#6b7280"><span>若全部攤位都用滿（上限）</span><span>${$$n(Math.round(R2*1.05))}</span></li></ul>
+      <li style="cursor:default;font-size:16px;background:#fff5f5"><span><b>總場地費合計（含稅）＝訂金＋尾款＋VAT</b><br><small style="color:#6b7280">這才是實際要付給館方的場地費；尾款依實際使用攤位數，目前為粗估</small></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
+      <li style="cursor:default"><span>　訂金 20%</span><span>${$$n(dep)}</span></li>
+      <li style="cursor:default;color:#6b7280"><span>　尾款 80%×使用比例（粗估）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
+      <li style="cursor:default;color:#6b7280"><span>　5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
+      <li style="cursor:default;color:#6b7280"><span>參考：場地費小計（未稅，未依使用比例折算）</span><span>${$$n(R2)}</span></li>
+      <li style="cursor:default;color:#6b7280"><span>參考：若全部攤位都用滿（上限，含稅）</span><span>${$$n(Math.round(R2*1.05))}</span></li></ul>
     <div class="row" style="justify-content:space-between;margin-top:14px">${back?'<button class="btn ghost" id="st_back">上一步</button>':'<span></span>'}<button class="btn" id="st_cal">改需求（週曆）</button></div>`);
   ['io','sh'].forEach(k=>$('#st_'+k).onchange=e=>{const v=e.target.value.replace(/\s/g,'').replace(/[～~–—]/g,'-');if(!/^\d\d:\d\d-\d\d:\d\d$/.test(v))return toast('格式例：09:30-17:30');c.times={...T,[k]:v};save();settleSheet(back)});
   $('#st_cal').onclick=()=>costCal();$('#st_back')&&($('#st_back').onclick=back)}
@@ -1283,11 +1287,11 @@ function wizSummary(){WZ.flow=false;const A=['I','J','K','L','M','N'].filter(a=>
     ${g.pinWarn&&g.pinWarn.length?`<div class="note">${g.pinWarn.map(esc).join('<br>')}</div>`:''}
     <ul class="list"><li style="cursor:default"><span>開區</span><span><b>${esc(cfgName(A))}</b></span></li>
     <li style="cursor:default"><span>檔期</span><span>${esc(S.cost.start||'')}・進場 ${S.cost.inD}＋展出 ${S.cost.showD}＋退場 ${S.cost.outD} 天</span></li>
-    <li style="cursor:default"><span>場地費小計（未稅）</span><span><b>${$$n(r.gross)}</b></span></li>
-    <li style="cursor:default"><span>訂金 20%（未稅）</span><span><b>${$$n(r.rows.reduce((t,o)=>t+o.dep,0))}</b></span></li>
-    <li style="cursor:default;color:#6b7280"><span>尾款 80%×使用比例（粗估，依平面圖）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
-    <li style="cursor:default;color:#6b7280"><span>5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
-    <li style="cursor:default"><span>總場地費（含稅，粗估）</span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
+    <li style="cursor:default;font-size:16px;background:#fff5f5"><span><b>總場地費（含稅）＝訂金＋尾款＋VAT</b></span><span><b>${$$n(r.rent+r.tax)}</b></span></li>
+    <li style="cursor:default"><span>　訂金 20%</span><span>${$$n(r.rows.reduce((t,o)=>t+o.dep,0))}</span></li>
+    <li style="cursor:default;color:#6b7280"><span>　尾款 80%×使用比例（粗估，依平面圖）</span><span>${$$n(r.rows.reduce((t,o)=>t+o.tail,0))}</span></li>
+    <li style="cursor:default;color:#6b7280"><span>　5%VAT（粗估）</span><span>${$$n(r.tax)}</span></li>
+    <li style="cursor:default;color:#6b7280"><span>參考：場地費小計（未稅）</span><span>${$$n(r.gross)}</span></li>
     <li style="cursor:default;color:#6b7280"><span>清潔費（含稅）</span><span>${$$n(r.clean)}</span></li></ul>
     <div class="row" style="justify-content:space-between;margin-top:14px"><span><button class="btn pri" id="ws_st">看各區結算單（粗估）</button> <button class="btn" id="ws_cal">看週曆</button></span><button class="btn" id="ws_ok">開始調整平面圖</button></div>`);
   $('#ws_st').onclick=()=>settleSheet(wizSummary);$('#ws_cal').onclick=()=>costCal();$('#ws_ok').onclick=()=>{closeM();fitHall()}}
